@@ -80,10 +80,10 @@ class DeviceExplorer extends Component {
   async fetchDevices() {
     try {
       this.setState({ loading: true });
-      const { searchQuery, selectedFilters, sortBy, sortOrder, currentPage, itemsPerPage } = this.state;
+      const { selectedFilters, sortBy, sortOrder, currentPage, itemsPerPage } = this.state;
 
       const params = {
-        search: searchQuery,
+        search: '', // Don't send search to backend - we'll filter client-side
         deviceType: selectedFilters.deviceType.length > 0 ? selectedFilters.deviceType[0] : '',
         vendor: selectedFilters.vendor.length > 0 ? selectedFilters.vendor[0] : '',
         team: selectedFilters.team.length > 0 ? selectedFilters.team[0] : '',
@@ -97,7 +97,7 @@ class DeviceExplorer extends Component {
       
       this.setState({
         devices: response.data.devices,
-        filteredDevices: response.data.devices,
+        filteredDevices: this.filterDevices(response.data.devices, this.state.searchQuery),
         totalRecords: response.data.pagination.total,
         loading: false,
         error: null
@@ -107,25 +107,40 @@ class DeviceExplorer extends Component {
     }
   }
 
-  handleSearchChange(e) {
-    const newQuery = e.target.value;
-    this.setState({ searchQuery: newQuery, currentPage: 1 });
-
-    if (this.searchDebounceTimer) {
-      clearTimeout(this.searchDebounceTimer);
+  // Client-side filtering function
+  filterDevices(devices, searchQuery) {
+    if (!searchQuery || searchQuery.trim() === '') {
+      return devices;
     }
 
-    this.searchDebounceTimer = setTimeout(() => {
-      this.fetchDevices();
-    }, 300);
+    const query = searchQuery.toLowerCase().trim();
+    return devices.filter(device => {
+      return (
+        (device.mac_address && device.mac_address.toLowerCase().includes(query)) ||
+        (device.model_name && device.model_name.toLowerCase().includes(query)) ||
+        (device.model_alias && device.model_alias.toLowerCase().includes(query)) ||
+        (device.vendor && device.vendor.toLowerCase().includes(query)) ||
+        (device.team_name && device.team_name.toLowerCase().includes(query))
+      );
+    });
+  }
+
+  handleSearchChange(e) {
+    const newQuery = e.target.value;
+    
+    // Immediately filter the devices client-side
+    const filtered = this.filterDevices(this.state.devices, newQuery);
+    
+    this.setState({ 
+      searchQuery: newQuery,
+      filteredDevices: filtered
+    });
   }
 
   handleSearchClear() {
-    this.setState({ searchQuery: '', currentPage: 1 }, () => {
-      if (this.searchDebounceTimer) {
-        clearTimeout(this.searchDebounceTimer);
-      }
-      this.fetchDevices();
+    this.setState({ 
+      searchQuery: '', 
+      filteredDevices: this.state.devices // Show all devices when search cleared
     });
   }
 

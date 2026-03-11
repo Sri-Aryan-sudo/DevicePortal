@@ -15,14 +15,27 @@ class UploadValidator extends Component {
   }
 
   requiredColumns = [
-    'device_id',
+    'mac_address',
+    'model_name',
+    'model_type',
     'device_type',
-    'model',
     'vendor',
-    'serial_number',
-    'status',
-    'location',
-    'team'
+    'team_name'
+  ];
+
+  optionalColumns = [
+    'model_alias',
+    'rack',
+    'location_scope',
+    'location_site',
+    'placement_type',
+    'usage_purpose',
+    'owner_name',
+    'utilization_week_7',
+    'utilization_week_8',
+    'automation_filter',
+    'infra_tickets',
+    'device_repurpose'
   ];
 
   handleDragOver = (e) => {
@@ -312,6 +325,31 @@ class UploadValidator extends Component {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="required-columns-info glass-panel">
+            <h4 className="info-title">Optional Columns (Recommended)</h4>
+            <p style={{ fontSize: '0.9em', color: 'var(--color-text-tertiary)', marginBottom: '1rem' }}>
+              These columns are not required but provide additional device information
+            </p>
+            <div className="required-columns-grid">
+              {this.optionalColumns.map((col, index) => (
+                <div key={index} className="required-column-item">
+                  <span className="column-icon" style={{ opacity: 0.5 }}>○</span>
+                  <span className="mono" style={{ opacity: 0.7 }}>{col}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="schema-notes glass-panel">
+            <h4 className="info-title">📋 Schema Notes</h4>
+            <ul style={{ fontSize: '0.9em', color: 'var(--color-text-secondary)', lineHeight: '1.8' }}>
+              <li><strong>device_type</strong>: Must be one of: PANEL, BOARD, or STB</li>
+              <li><strong>model_type</strong>: Original model type (will derive device_type if contains PANEL/BOARD)</li>
+              <li><strong>mac_address</strong>: Format: AA:BB:CC:DD:EE:FF (must be unique)</li>
+              <li><strong>utilization_week_7/8</strong>: Numeric values (0-100) representing percentage</li>
+            </ul>
           </div>
         </div>
       </div>
