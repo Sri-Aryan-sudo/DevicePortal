@@ -14,6 +14,11 @@ export const deviceAPI = {
   getDeviceByMac: (mac) => api.get(`/devices/${mac}`),
   createDevice: (data) => api.post('/devices', data),
   updateDevice: (mac, data) => api.put(`/devices/${mac}`, data),
+  updateDeviceByPOC: (mac, data, token) => api.put(`/devices/${mac}/poc-edit`, data, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }),
   deleteDevice: (mac) => api.delete(`/devices/${mac}`),
   getStatistics: () => api.get('/statistics'),
   getFilterOptions: () => api.get('/filter-options'),

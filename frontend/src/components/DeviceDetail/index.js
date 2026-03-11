@@ -10,7 +10,17 @@ class DeviceDetail extends Component {
       timeline: [],
       auditLog: [],
       loading: true,
-      error: null
+      error: null,
+      
+      // Edit mode state
+      isEditMode: false,
+      editedFields: {},
+      saving: false,
+      saveSuccess: false,
+      saveError: null,
+      
+      // User role (you'll pass this from parent or get from auth context)
+      userRole: 'POC' // TODO: Get from authentication context
     };
   }
 
@@ -53,6 +63,88 @@ class DeviceDetail extends Component {
       'creation': '✨'
     };
     return icons[type] || '•';
+  }
+
+  // Check if user can edit (POC or ADMIN only)
+  canEdit = () => {
+    const { userRole } = this.state;
+    return userRole === 'POC' || userRole === 'ADMIN';
+  }
+
+  // Enter edit mode
+  handleEnterEditMode = () => {
+    const { device } = this.state;
+    this.setState({
+      isEditMode: true,
+      editedFields: {
+        owner_name: device.owner_name || '',
+        team_name: device.team_name || '',
+        usage_purpose: device.usage_purpose || '',
+        placement_type: device.placement_type || '',
+        location_site: device.location_site || '',
+        device_repurpose: device.device_repurpose || ''
+      },
+      saveSuccess: false,
+      saveError: null
+    });
+  }
+
+  // Cancel edit mode
+  handleCancelEdit = () => {
+    this.setState({
+      isEditMode: false,
+      editedFields: {},
+      saveError: null
+    });
+  }
+
+  // Handle field change
+  handleFieldChange = (field, value) => {
+    this.setState(prevState => ({
+      editedFields: {
+        ...prevState.editedFields,
+        [field]: value
+      }
+    }));
+  }
+
+  // Save changes
+  handleSaveChanges = async () => {
+    const { device, editedFields } = this.state;
+    
+    try {
+      this.setState({ saving: true, saveError: null });
+
+      // TODO: Get actual JWT token from auth context/localStorage
+      const token = localStorage.getItem('authToken') || 'demo-token';
+
+      const response = await deviceAPI.updateDeviceByPOC(
+        device.mac_address,
+        editedFields,
+        token
+      );
+
+      // Update device state with new data
+      this.setState({
+        device: response.data.device,
+        isEditMode: false,
+        saving: false,
+        saveSuccess: true,
+        saveError: null
+      });
+
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        this.setState({ saveSuccess: false });
+      }, 3000);
+
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Failed to save changes';
+      this.setState({
+        saving: false,
+        saveError: errorMessage
+      });
+    }
   }
 
   renderHeroCard() {
@@ -112,27 +204,91 @@ class DeviceDetail extends Component {
               <span className="detail-value">{device.model_type}</span>
             </div>
           )}
-          <div className="detail-row">
-            <span className="detail-label">Owner</span>
-            <span className="detail-value">{device.owner_name || 'Unassigned'}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Team</span>
-            <span className="detail-value">{device.team_name}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Location</span>
-            <span className="detail-value">{device.location_site}</span>
-          </div>
+          
+          {/* Editable Fields */}
+          {this.renderEditableField('Owner', 'owner_name', device.owner_name || 'Unassigned')}
+          {this.renderEditableField('Team', 'team_name', device.team_name)}
+          {this.renderEditableField('Location', 'location_site', device.location_site)}
+          {this.renderEditableField('Placement Type', 'placement_type', device.placement_type)}
+          {this.renderEditableField('Usage Purpose', 'usage_purpose', device.usage_purpose)}
+          {this.renderEditableField('Device Repurpose', 'device_repurpose', device.device_repurpose)}
+          
           <div className="detail-row">
             <span className="detail-label">Rack</span>
             <span className="detail-value">{device.rack}</span>
           </div>
-          <div className="detail-row">
-            <span className="detail-label">Placement Type</span>
-            <span className="detail-value">{device.placement_type}</span>
-          </div>
         </div>
+
+        {/* Edit/Save buttons */}
+        {this.renderEditButtons()}
+      </div>
+    );
+  }
+
+  // Render editable field based on edit mode
+  renderEditableField(label, fieldName, value) {
+    const { isEditMode, editedFields } = this.state;
+
+    return (
+      <div className="detail-row">
+        <span className="detail-label">{label}</span>
+        {isEditMode ? (
+          <input
+            type="text"
+            className="detail-input"
+            value={editedFields[fieldName] || ''}
+            onChange={(e) => this.handleFieldChange(fieldName, e.target.value)}
+          />
+        ) : (
+          <span className="detail-value">{value || '-'}</span>
+        )}
+      </div>
+    );
+  }
+
+  // Render edit/save/cancel buttons
+  renderEditButtons() {
+    const { isEditMode, saving, saveSuccess, saveError } = this.state;
+
+    if (!this.canEdit()) {
+      return null; // VIEWER users don't see edit button
+    }
+
+    return (
+      <div className="edit-actions">
+        {saveSuccess && (
+          <div className="save-success-message">
+            ✓ Changes saved successfully!
+          </div>
+        )}
+        {saveError && (
+          <div className="save-error-message">
+            ✗ {saveError}
+          </div>
+        )}
+        
+        {isEditMode ? (
+          <div className="edit-buttons">
+            <button 
+              className="btn-save" 
+              onClick={this.handleSaveChanges}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : '💾 Save Changes'}
+            </button>
+            <button 
+              className="btn-cancel" 
+              onClick={this.handleCancelEdit}
+              disabled={saving}
+            >
+              ✕ Cancel
+            </button>
+          </div>
+        ) : (
+          <button className="btn-edit" onClick={this.handleEnterEditMode}>
+            ✏️ Edit Device
+          </button>
+        )}
       </div>
     );
   }
