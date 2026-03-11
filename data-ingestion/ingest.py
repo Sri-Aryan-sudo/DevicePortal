@@ -87,14 +87,14 @@ def is_valid_mac(mac):
 
     return re.match(pattern, mac) is not None
 
-def extract_vendor(model_alias):
-    if model_alias is None:
+def extract_vendor(model_type):
+    if model_type is None:
         return None
 
-    text = str(model_alias).strip()
+    text = str(model_type).strip()
 
-    if "-" in text:
-        return text.split("-")[0]
+    if "_" in text:
+        return text.split("_")[0]
 
     return text
 # ==============================
@@ -171,7 +171,7 @@ def clean_dataframe(file_path):
     # Remove invalid MAC rows
     df = df[df["mac_address"].apply(is_valid_mac)]
     # Extract vendor from model_alias
-    df["vendor"] = df["model_alias"].apply(extract_vendor)
+    df["vendor"] = df["model_type"].apply(extract_vendor)
     return df
 
 
