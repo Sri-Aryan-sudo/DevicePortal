@@ -3,8 +3,7 @@ import Dashboard from './components/Dashboard';
 import DeviceExplorer from './components/DeviceExplorer';
 import DeviceDetail from './components/DeviceDetail';
 import UploadValidator from './components/UploadValidator';
-import IngestionMonitor from './components/IngestionMonitor';
-import DataQualityCenter from './components/DataQualityCenter';
+
 import './global.css';
 import './App.css';
 
@@ -54,10 +53,7 @@ class App extends Component {
         return <DeviceDetail device={selectedDevice} onBack={this.handleBackToExplorer} />;
       case 'upload':
         return <UploadValidator />;
-      case 'ingestion':
-        return <IngestionMonitor />;
-      case 'quality':
-        return <DataQualityCenter />;
+      
       default:
         return <Dashboard />;
     }
@@ -109,21 +105,7 @@ class App extends Component {
               {sidebarOpen && <span className="nav-label">Upload Validator</span>}
             </button>
 
-            <button 
-              className={`nav-item ${currentView === 'ingestion' ? 'active' : ''}`}
-              onClick={() => this.navigate('ingestion')}
-            >
-              <span className="nav-icon">⚙️</span>
-              {sidebarOpen && <span className="nav-label">Ingestion Monitor</span>}
-            </button>
-
-            <button 
-              className={`nav-item ${currentView === 'quality' ? 'active' : ''}`}
-              onClick={() => this.navigate('quality')}
-            >
-              <span className="nav-icon">✓</span>
-              {sidebarOpen && <span className="nav-label">Data Quality</span>}
-            </button>
+            
           </nav>
 
           <div className="sidebar-footer">
