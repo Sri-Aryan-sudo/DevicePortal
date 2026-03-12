@@ -59,6 +59,13 @@ export const drillDownAPI = {
   
   // Vendors drill-down
   getAllVendorsBreakdown: () => api.get('/drilldown/vendors/all'),
+  
+  // NEW: Vendor-first drill-down APIs
+  getVendorBreakdownByType: (deviceType) => api.get(`/drilldown/${deviceType}/vendors`),
+  getModelTypesByVendor: (vendor) => api.get(`/drilldown/vendors/${encodeURIComponent(vendor)}/models`),
+  getModelTypesByVendorAndType: (deviceType, vendor) => api.get(`/drilldown/${deviceType}/vendors/${encodeURIComponent(vendor)}/models`),
+  getTeamsByVendorAndModel: (vendor, modelType) => api.get(`/drilldown/vendors/${encodeURIComponent(vendor)}/models/${encodeURIComponent(modelType)}/teams`),
+  getTeamsByTypeVendorAndModel: (deviceType, vendor, modelType) => api.get(`/drilldown/${deviceType}/vendors/${encodeURIComponent(vendor)}/models/${encodeURIComponent(modelType)}/teams`),
 };
 
 export default api;

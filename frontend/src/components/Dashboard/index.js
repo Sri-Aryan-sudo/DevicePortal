@@ -83,72 +83,72 @@ class Dashboard extends Component {
   handleKPIClick = async (kpi) => {
     const { type } = kpi;
     
-    // Category drill-down (PANEL, BOARD, STB) - SIMPLIFIED TO 2 LEVELS
+    // All category tiles (PANEL, BOARD, STB) → Vendors first
     if (type === 'PANEL' || type === 'BOARD' || type === 'STB') {
       this.setState({ 
         loadingDrillDown: true, 
         showDrillDown: true,
         drillDownType: 'category',
-        drillDownLevel: 'team',
+        drillDownLevel: 'vendor',
         selectedDeviceType: type
       });
       
       try {
-        const response = await drillDownAPI.getTeamBreakdown(type);
+        const response = await drillDownAPI.getVendorBreakdownByType(type);
         
         this.setState({
           drillDownType: 'category',
-          drillDownLevel: 'team',
+          drillDownLevel: 'vendor',
           drillDownData: response.data.breakdown,
           drillDownDevices: response.data.devices,
           selectedDeviceType: type,
           loadingDrillDown: false,
-          selectedTeam: null,
           selectedVendor: null,
-          selectedModelType: null
+          selectedModelType: null,
+          selectedTeam: null
         });
       } catch (error) {
         this.setState({ 
-          error: 'Failed to load team data', 
+          error: 'Failed to load vendor data', 
           showDrillDown: false, 
           loadingDrillDown: false 
         });
       }
     }
     
-    // Total devices drill-down - KEEP AS IS
+    // Total devices drill-down → Vendors first
     else if (type === 'total') {
       this.setState({ 
         loadingDrillDown: true, 
         showDrillDown: true,
         drillDownType: 'total',
-        drillDownLevel: 'device_type'
+        drillDownLevel: 'vendor'
       });
       
       try {
-        const response = await drillDownAPI.getDeviceTypeBreakdown();
+        const response = await drillDownAPI.getAllVendorsBreakdown();
         
         this.setState({
           drillDownType: 'total',
-          drillDownLevel: 'device_type',
+          drillDownLevel: 'vendor',
           drillDownData: response.data.breakdown,
           drillDownDevices: response.data.devices,
           loadingDrillDown: false,
           selectedDeviceType: null,
-          selectedTeam: null,
           selectedVendor: null,
-          selectedModelType: null
+          selectedModelType: null,
+          selectedTeam: null
         });
       } catch (error) {
         this.setState({ 
-          error: 'Failed to load device type data', 
+          error: 'Failed to load vendor data', 
           showDrillDown: false, 
           loadingDrillDown: false 
         });
       }
     }
     
-    // Vendors drill-down - KEEP AS IS
+    // Vendors tile
     else if (type === 'vendors') {
       this.setState({ 
         loadingDrillDown: true, 
@@ -167,9 +167,9 @@ class Dashboard extends Component {
           drillDownDevices: response.data.devices,
           loadingDrillDown: false,
           selectedDeviceType: null,
-          selectedTeam: null,
           selectedVendor: null,
-          selectedModelType: null
+          selectedModelType: null,
+          selectedTeam: null
         });
       } catch (error) {
         this.setState({ 
@@ -204,63 +204,58 @@ class Dashboard extends Component {
   }
 
   handleTeamClick = async (teamItem) => {
-    const { selectedDeviceType, drillDownType } = this.state;
+    const { selectedDeviceType, selectedVendor, selectedModelType, drillDownType } = this.state;
     this.setState({ loadingDrillDown: true });
     
-    // For category drill-down: Team → Devices (SIMPLIFIED - NO VENDOR/MODEL LEVELS)
-    if (drillDownType === 'category') {
-      try {
-        // Fetch devices for this device type + team combination
-        const params = {
-          deviceType: selectedDeviceType,
+    try {
+      let response;
+      
+      if (drillDownType === 'total') {
+        response = await deviceAPI.getDevices({
+          vendor: selectedVendor,
+          modelType: selectedModelType,
           team: teamItem.team_name,
           page: 1,
-          limit: 10000 // Get all devices
-        };
-        
-        const response = await deviceAPI.getDevices(params);
-        
-        this.setState({
-          drillDownLevel: 'devices',
-          drillDownData: null, // No more breakdown, just devices
-          drillDownDevices: response.data.devices,
-          selectedTeam: teamItem.team_name,
-          loadingDrillDown: false
+          limit: 10000
         });
-      } catch (error) {
-        this.setState({ 
-          error: 'Failed to load devices', 
-          loadingDrillDown: false 
+      } else {
+        response = await deviceAPI.getDevices({
+          deviceType: selectedDeviceType,
+          vendor: selectedVendor,
+          modelType: selectedModelType,
+          team: teamItem.team_name,
+          page: 1,
+          limit: 10000
         });
       }
-    }
-    // For total drill-down: Keep existing vendor breakdown
-    else {
-      try {
-        const response = await drillDownAPI.getVendorBreakdown(selectedDeviceType, teamItem.team_name);
-        
-        this.setState({
-          drillDownLevel: 'vendor',
-          drillDownData: response.data.breakdown,
-          drillDownDevices: response.data.devices,
-          selectedTeam: teamItem.team_name,
-          loadingDrillDown: false
-        });
-      } catch (error) {
-        this.setState({ 
-          error: 'Failed to load vendor data', 
-          loadingDrillDown: false 
-        });
-      }
+      
+      this.setState({
+        drillDownLevel: 'devices',
+        drillDownData: null,
+        drillDownDevices: response.data.devices,
+        selectedTeam: teamItem.team_name,
+        loadingDrillDown: false
+      });
+    } catch (error) {
+      this.setState({ 
+        error: 'Failed to load devices', 
+        loadingDrillDown: false 
+      });
     }
   }
 
   handleVendorClick = async (vendorItem) => {
-    const { selectedDeviceType, selectedTeam } = this.state;
+    const { selectedDeviceType, drillDownType } = this.state;
     this.setState({ loadingDrillDown: true });
     
     try {
-      const response = await drillDownAPI.getModelTypeBreakdown(selectedDeviceType, selectedTeam, vendorItem.vendor);
+      let response;
+      
+      if (drillDownType === 'total') {
+        response = await drillDownAPI.getModelTypesByVendor(vendorItem.vendor);
+      } else {
+        response = await drillDownAPI.getModelTypesByVendorAndType(selectedDeviceType, vendorItem.vendor);
+      }
       
       this.setState({
         drillDownLevel: 'model_type',
@@ -278,29 +273,35 @@ class Dashboard extends Component {
   }
 
   handleModelTypeClick = async (modelTypeItem) => {
-    const { selectedDeviceType, selectedTeam, selectedVendor } = this.state;
+    const { selectedDeviceType, selectedVendor, drillDownType } = this.state;
     this.setState({ loadingDrillDown: true });
     
     try {
-      const response = await drillDownAPI.getDeviceList(selectedDeviceType, selectedTeam, selectedVendor, modelTypeItem.model_type);
+      let response;
+      
+      if (drillDownType === 'total') {
+        response = await drillDownAPI.getTeamsByVendorAndModel(selectedVendor, modelTypeItem.model_type);
+      } else {
+        response = await drillDownAPI.getTeamsByTypeVendorAndModel(selectedDeviceType, selectedVendor, modelTypeItem.model_type);
+      }
       
       this.setState({
-        drillDownLevel: 'devices',
+        drillDownLevel: 'team',
+        drillDownData: response.data.breakdown,
         drillDownDevices: response.data.devices,
-        drillDownData: null,
         selectedModelType: modelTypeItem.model_type,
         loadingDrillDown: false
       });
     } catch (error) {
       this.setState({ 
-        error: 'Failed to load device list', 
+        error: 'Failed to load team data', 
         loadingDrillDown: false 
       });
     }
   }
 
   handleNavigate = (target) => {
-    const { drillDownType, selectedDeviceType, selectedTeam, selectedVendor } = this.state;
+    const { drillDownType, selectedDeviceType, selectedVendor, selectedModelType } = this.state;
     
     if (target === 'dashboard') {
       this.setState({
@@ -315,31 +316,22 @@ class Dashboard extends Component {
         selectedModelType: null
       });
     } 
-    else if (target === 'device_type' && drillDownType === 'total') {
-      // Go back to device type level
-      const kpi = this.state.kpis.find(k => k.type === 'total');
+    else if (target === 'vendor') {
+      // Go back to vendor level - reload from KPI
+      const kpi = this.state.kpis.find(k => 
+        drillDownType === 'total' ? k.type === 'total' : k.type === selectedDeviceType
+      );
       if (kpi) this.handleKPIClick(kpi);
     }
-    else if (target === 'team') {
-      if (drillDownType === 'total') {
-        // Re-load team view for selected device type
-        const deviceTypeData = { device_type: selectedDeviceType };
-        this.handleDeviceTypeClick(deviceTypeData);
-      } else {
-        // Re-load team view for category
-        const kpi = this.state.kpis.find(k => k.type === selectedDeviceType);
-        if (kpi) this.handleKPIClick(kpi);
-      }
-    } 
-    else if (target === 'vendor') {
-      // Re-load vendor view
-      const teamData = { team_name: selectedTeam };
-      this.handleTeamClick(teamData);
-    } 
     else if (target === 'model_type') {
-      // Re-load model type view
+      // Go back to model type level - reload from vendor
       const vendorData = { vendor: selectedVendor };
       this.handleVendorClick(vendorData);
+    } 
+    else if (target === 'team') {
+      // Go back to team level - reload from model type
+      const modelTypeData = { model_type: selectedModelType };
+      this.handleModelTypeClick(modelTypeData);
     }
   }
 
@@ -442,40 +434,7 @@ class Dashboard extends Component {
     );
   }
 
-  renderRecentIngestions() {
-    const { recentIngestions } = this.state;
 
-    return (
-      <div className="glass-panel chart-panel">
-        <h3 className="panel-title">
-          Real-time Ingestion Status
-          <span className="live-indicator">
-            <span className="pulse-dot" />
-            Live
-          </span>
-        </h3>
-        <div className="ingestion-list">
-          {recentIngestions.map((item, index) => (
-            <div key={item.id} className="ingestion-item">
-              <div className="ingestion-icon">
-                {item.status === 'success' && <span className="icon-check">✓</span>}
-                {item.status === 'processing' && <div className="spinner-small" />}
-              </div>
-              <div className="ingestion-details">
-                <div className="ingestion-filename">{item.filename}</div>
-                <div className="ingestion-meta">
-                  {item.rows.toLocaleString()} rows • {item.timestamp}
-                </div>
-              </div>
-              <div className={`ingestion-status status-${item.status}`}>
-                {item.status}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   renderDeviceGrowth() {
     const { deviceGrowth } = this.state;
@@ -514,7 +473,11 @@ class Dashboard extends Component {
   }
 
   render() {
-    const { kpis, loading, error, showDrillDown, drillDownType, drillDownLevel, drillDownData, drillDownDevices, selectedDeviceType, selectedTeam, selectedVendor, selectedModelType, loadingDrillDown } = this.state;
+    const { 
+      kpis, loading, error, showDrillDown, drillDownType, drillDownLevel, 
+      drillDownData, drillDownDevices, selectedDeviceType, selectedTeam, 
+      selectedVendor, selectedModelType, loadingDrillDown 
+    } = this.state;
 
     // Show drill-down view instead of dashboard
     if (showDrillDown) {
@@ -534,6 +497,7 @@ class Dashboard extends Component {
           onVendorClick={this.handleVendorClick}
           onModelTypeClick={this.handleModelTypeClick}
           onNavigate={this.handleNavigate}
+          onDeviceSelect={this.props.onDeviceSelect}
         />
       );
     }
@@ -586,7 +550,7 @@ class Dashboard extends Component {
         <div className="charts-grid">
           <div className="chart-column-left">
             {this.renderDevicesByTeam()}
-            {this.renderRecentIngestions()}
+            
           </div>
           <div className="chart-column-right">
             {this.renderVendorDistribution()}

@@ -82,23 +82,47 @@ class DeviceExplorer extends Component {
       this.setState({ loading: true });
       const { selectedFilters, sortBy, sortOrder, currentPage, itemsPerPage } = this.state;
 
+      // Fetch all devices (no filters sent to backend for multi-select support)
       const params = {
-        search: '', // Don't send search to backend - we'll filter client-side
-        deviceType: selectedFilters.deviceType.length > 0 ? selectedFilters.deviceType[0] : '',
-        vendor: selectedFilters.vendor.length > 0 ? selectedFilters.vendor[0] : '',
-        team: selectedFilters.team.length > 0 ? selectedFilters.team[0] : '',
+        search: '', 
+        deviceType: '',
+        vendor: '',
+        team: '',
         sortBy,
         sortOrder,
-        page: currentPage,
-        limit: itemsPerPage
+        page: 1,
+        limit: 10000 // Get all devices for client-side filtering
       };
 
       const response = await deviceAPI.getDevices(params);
       
+      // Apply filters and search client-side
+      let filtered = response.data.devices;
+      
+      // Apply multi-select filters
+      if (selectedFilters.deviceType.length > 0) {
+        filtered = filtered.filter(device => 
+          selectedFilters.deviceType.includes(device.device_type)
+        );
+      }
+      if (selectedFilters.vendor.length > 0) {
+        filtered = filtered.filter(device => 
+          selectedFilters.vendor.includes(device.vendor)
+        );
+      }
+      if (selectedFilters.team.length > 0) {
+        filtered = filtered.filter(device => 
+          selectedFilters.team.includes(device.team_name)
+        );
+      }
+      
+      // Apply search query
+      filtered = this.filterDevices(filtered, this.state.searchQuery);
+      
       this.setState({
         devices: response.data.devices,
-        filteredDevices: this.filterDevices(response.data.devices, this.state.searchQuery),
-        totalRecords: response.data.pagination.total,
+        filteredDevices: filtered,
+        totalRecords: filtered.length,
         loading: false,
         error: null
       });
@@ -127,9 +151,22 @@ class DeviceExplorer extends Component {
 
   handleSearchChange(e) {
     const newQuery = e.target.value;
+    const { devices, selectedFilters } = this.state;
     
-    // Immediately filter the devices client-side
-    const filtered = this.filterDevices(this.state.devices, newQuery);
+    // Apply multi-select filters first
+    let filtered = devices;
+    if (selectedFilters.deviceType.length > 0) {
+      filtered = filtered.filter(device => selectedFilters.deviceType.includes(device.device_type));
+    }
+    if (selectedFilters.vendor.length > 0) {
+      filtered = filtered.filter(device => selectedFilters.vendor.includes(device.vendor));
+    }
+    if (selectedFilters.team.length > 0) {
+      filtered = filtered.filter(device => selectedFilters.team.includes(device.team_name));
+    }
+    
+    // Then apply search
+    filtered = this.filterDevices(filtered, newQuery);
     
     this.setState({ 
       searchQuery: newQuery,
@@ -138,9 +175,23 @@ class DeviceExplorer extends Component {
   }
 
   handleSearchClear() {
+    const { devices, selectedFilters } = this.state;
+    
+    // Apply multi-select filters
+    let filtered = devices;
+    if (selectedFilters.deviceType.length > 0) {
+      filtered = filtered.filter(device => selectedFilters.deviceType.includes(device.device_type));
+    }
+    if (selectedFilters.vendor.length > 0) {
+      filtered = filtered.filter(device => selectedFilters.vendor.includes(device.vendor));
+    }
+    if (selectedFilters.team.length > 0) {
+      filtered = filtered.filter(device => selectedFilters.team.includes(device.team_name));
+    }
+    
     this.setState({ 
       searchQuery: '', 
-      filteredDevices: this.state.devices // Show all devices when search cleared
+      filteredDevices: filtered
     });
   }
 

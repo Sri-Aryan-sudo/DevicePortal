@@ -20,7 +20,7 @@ const getDevices = async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (mac_address ILIKE $${paramCount} OR model_name ILIKE $${paramCount} OR model_alias ILIKE $${paramCount})`;
+      query += ` AND (mac_address ILIKE $${paramCount} OR model_name ILIKE $${paramCount} OR model_alias ILIKE $${paramCount} OR vendor ILIKE $${paramCount} OR team_name ILIKE $${paramCount})`;
       paramCount++;
     }
 

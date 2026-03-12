@@ -3,7 +3,6 @@ import Dashboard from './components/Dashboard';
 import DeviceExplorer from './components/DeviceExplorer';
 import DeviceDetail from './components/DeviceDetail';
 import UploadValidator from './components/UploadValidator';
-
 import Login from './components/Login';
 import './global.css';
 import './App.css';
@@ -133,7 +132,7 @@ class App extends Component {
 
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onDeviceSelect={this.handleDeviceSelect} />;
       case 'explorer':
         return <DeviceExplorer onDeviceSelect={this.handleDeviceSelect} />;
       case 'device-detail':
@@ -147,8 +146,9 @@ class App extends Component {
         );
       case 'upload':
         return <UploadValidator />;
+      
       default:
-        return <Dashboard />;
+        return <Dashboard onDeviceSelect={this.handleDeviceSelect} />;
     }
   }
 
@@ -228,6 +228,8 @@ class App extends Component {
               <span className="nav-icon">⬆️</span>
               {sidebarOpen && <span className="nav-label">Upload Validator</span>}
             </button>
+
+            
           </nav>
 
           <div className="sidebar-footer">
