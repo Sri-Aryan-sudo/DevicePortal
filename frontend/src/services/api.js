@@ -9,6 +9,21 @@ const api = axios.create({
   },
 });
 
+// Authentication API
+export const authAPI = {
+  login: (identifier, password) => api.post('/auth/login', { identifier, password }),
+  verifyToken: (token) => api.post('/auth/verify', {}, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }),
+  logout: (token) => api.post('/auth/logout', {}, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }),
+  getCurrentUser: (token) => api.get('/auth/me', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }),
+};
+
+// Device API
 export const deviceAPI = {
   getDevices: (params) => api.get('/devices', { params }),
   getDeviceByMac: (mac) => api.get(`/devices/${mac}`),
@@ -25,10 +40,12 @@ export const deviceAPI = {
   getAllDevices: (params) => api.get('/devices', { params: { ...params, limit: 100000, page: 1 } }),
 };
 
+// Data Quality API
 export const dataQualityAPI = {
   getQualityMetrics: () => api.get('/data-quality'),
 };
 
+// Drill-Down API
 export const drillDownAPI = {
   // Category drill-down (PANEL, BOARD, STB)
   getTeamBreakdown: (deviceType) => api.get(`/drilldown/${deviceType}/teams`),

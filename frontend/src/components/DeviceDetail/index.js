@@ -17,10 +17,7 @@ class DeviceDetail extends Component {
       editedFields: {},
       saving: false,
       saveSuccess: false,
-      saveError: null,
-      
-      // User role (you'll pass this from parent or get from auth context)
-      userRole: 'POC' // TODO: Get from authentication context
+      saveError: null
     };
   }
 
@@ -67,7 +64,7 @@ class DeviceDetail extends Component {
 
   // Check if user can edit (POC or ADMIN only)
   canEdit = () => {
-    const { userRole } = this.state;
+    const { userRole } = this.props;
     return userRole === 'POC' || userRole === 'ADMIN';
   }
 
@@ -111,17 +108,15 @@ class DeviceDetail extends Component {
   // Save changes
   handleSaveChanges = async () => {
     const { device, editedFields } = this.state;
+    const { authToken } = this.props;
     
     try {
       this.setState({ saving: true, saveError: null });
 
-      // TODO: Get actual JWT token from auth context/localStorage
-      const token = localStorage.getItem('authToken') || 'demo-token';
-
       const response = await deviceAPI.updateDeviceByPOC(
         device.mac_address,
         editedFields,
-        token
+        authToken
       );
 
       // Update device state with new data

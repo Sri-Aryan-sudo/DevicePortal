@@ -6,7 +6,7 @@ class DrillDownView extends Component {
   renderBreadcrumb() {
     const { type, level, selectedDeviceType, selectedTeam, selectedVendor, selectedModelType, onNavigate } = this.props;
 
-    // Category drill-down (PANEL, BOARD, STB)
+    // Category drill-down (PANEL, BOARD, STB) - SIMPLIFIED: Only Team → Devices
     if (type === 'category') {
       return (
         <div className="breadcrumb">
@@ -19,39 +19,13 @@ class DrillDownView extends Component {
             <span className="breadcrumb-item active">{selectedDeviceType} - Teams</span>
           )}
 
-          {(level === 'vendor' || level === 'model_type' || level === 'devices') && (
+          {level === 'devices' && (
             <>
               <button className="breadcrumb-item" onClick={() => onNavigate('team')}>
                 {selectedDeviceType} - Teams
               </button>
               <span className="breadcrumb-separator">/</span>
-            </>
-          )}
-
-          {level === 'vendor' && (
-            <span className="breadcrumb-item active">{selectedTeam} - Vendors</span>
-          )}
-
-          {(level === 'model_type' || level === 'devices') && (
-            <>
-              <button className="breadcrumb-item" onClick={() => onNavigate('vendor')}>
-                {selectedTeam} - Vendors
-              </button>
-              <span className="breadcrumb-separator">/</span>
-            </>
-          )}
-
-          {level === 'model_type' && (
-            <span className="breadcrumb-item active">{selectedVendor} - Model Types</span>
-          )}
-
-          {level === 'devices' && (
-            <>
-              <button className="breadcrumb-item" onClick={() => onNavigate('model_type')}>
-                {selectedVendor} - Model Types
-              </button>
-              <span className="breadcrumb-separator">/</span>
-              <span className="breadcrumb-item active">{selectedModelType} - Devices</span>
+              <span className="breadcrumb-item active">{selectedTeam} - Devices</span>
             </>
           )}
         </div>

@@ -444,3 +444,71 @@
     width: 100%;
   }
 }
+
+/* Upload Results */
+.upload-results {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.upload-results.success .panel-subtitle {
+  color: #10b981;
+}
+
+.upload-stats {
+  display: flex;
+  gap: 2rem;
+  margin: 1rem 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stat-value.success {
+  color: #10b981;
+}
+
+.stat-value.info {
+  color: #3b82f6;
+}
+
+.stat-value.error {
+  color: #ef4444;
+}
+
+.upload-message {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.upload-error {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.upload-error .panel-subtitle {
+  color: #ef4444;
+}
+
+.upload-error p {
+  margin-top: 0.5rem;
+  color: #ef4444;
+}

@@ -83,7 +83,7 @@ class Dashboard extends Component {
   handleKPIClick = async (kpi) => {
     const { type } = kpi;
     
-    // Category drill-down (PANEL, BOARD, STB)
+    // Category drill-down (PANEL, BOARD, STB) - SIMPLIFIED TO 2 LEVELS
     if (type === 'PANEL' || type === 'BOARD' || type === 'STB') {
       this.setState({ 
         loadingDrillDown: true, 
@@ -116,7 +116,7 @@ class Dashboard extends Component {
       }
     }
     
-    // Total devices drill-down
+    // Total devices drill-down - KEEP AS IS
     else if (type === 'total') {
       this.setState({ 
         loadingDrillDown: true, 
@@ -148,7 +148,7 @@ class Dashboard extends Component {
       }
     }
     
-    // Vendors drill-down
+    // Vendors drill-down - KEEP AS IS
     else if (type === 'vendors') {
       this.setState({ 
         loadingDrillDown: true, 
@@ -204,24 +204,54 @@ class Dashboard extends Component {
   }
 
   handleTeamClick = async (teamItem) => {
-    const { selectedDeviceType } = this.state;
+    const { selectedDeviceType, drillDownType } = this.state;
     this.setState({ loadingDrillDown: true });
     
-    try {
-      const response = await drillDownAPI.getVendorBreakdown(selectedDeviceType, teamItem.team_name);
-      
-      this.setState({
-        drillDownLevel: 'vendor',
-        drillDownData: response.data.breakdown,
-        drillDownDevices: response.data.devices,
-        selectedTeam: teamItem.team_name,
-        loadingDrillDown: false
-      });
-    } catch (error) {
-      this.setState({ 
-        error: 'Failed to load vendor data', 
-        loadingDrillDown: false 
-      });
+    // For category drill-down: Team → Devices (SIMPLIFIED - NO VENDOR/MODEL LEVELS)
+    if (drillDownType === 'category') {
+      try {
+        // Fetch devices for this device type + team combination
+        const params = {
+          deviceType: selectedDeviceType,
+          team: teamItem.team_name,
+          page: 1,
+          limit: 10000 // Get all devices
+        };
+        
+        const response = await deviceAPI.getDevices(params);
+        
+        this.setState({
+          drillDownLevel: 'devices',
+          drillDownData: null, // No more breakdown, just devices
+          drillDownDevices: response.data.devices,
+          selectedTeam: teamItem.team_name,
+          loadingDrillDown: false
+        });
+      } catch (error) {
+        this.setState({ 
+          error: 'Failed to load devices', 
+          loadingDrillDown: false 
+        });
+      }
+    }
+    // For total drill-down: Keep existing vendor breakdown
+    else {
+      try {
+        const response = await drillDownAPI.getVendorBreakdown(selectedDeviceType, teamItem.team_name);
+        
+        this.setState({
+          drillDownLevel: 'vendor',
+          drillDownData: response.data.breakdown,
+          drillDownDevices: response.data.devices,
+          selectedTeam: teamItem.team_name,
+          loadingDrillDown: false
+        });
+      } catch (error) {
+        this.setState({ 
+          error: 'Failed to load vendor data', 
+          loadingDrillDown: false 
+        });
+      }
     }
   }
 
