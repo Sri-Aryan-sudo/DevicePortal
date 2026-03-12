@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import DeviceExplorer from './components/DeviceExplorer';
 import DeviceDetail from './components/DeviceDetail';
 import UploadValidator from './components/UploadValidator';
+import UserManagement from './components/UserManagement';
 import Login from './components/Login';
 import './global.css';
 import './App.css';
@@ -146,7 +147,8 @@ class App extends Component {
         );
       case 'upload':
         return <UploadValidator />;
-      
+      case 'user-management':
+        return <UserManagement />;
       default:
         return <Dashboard onDeviceSelect={this.handleDeviceSelect} />;
     }
@@ -230,6 +232,17 @@ class App extends Component {
             </button>
 
             
+
+            {/* ADMIN-only: User Management */}
+            {currentUser?.role === 'ADMIN' && (
+              <button 
+                className={`nav-item ${currentView === 'user-management' ? 'active' : ''}`}
+                onClick={() => this.navigate('user-management')}
+              >
+                <span className="nav-icon">👥</span>
+                {sidebarOpen && <span className="nav-label">User Management</span>}
+              </button>
+            )}
           </nav>
 
           <div className="sidebar-footer">

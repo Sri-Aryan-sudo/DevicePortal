@@ -21,6 +21,13 @@ export const authAPI = {
   getCurrentUser: (token) => api.get('/auth/me', {
     headers: { 'Authorization': `Bearer ${token}` }
   }),
+  // ADMIN-only endpoints
+  createUser: (userData, token) => api.post('/auth/users', userData, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }),
+  getAllUsers: (token) => api.get('/auth/users', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }),
 };
 
 // Device API

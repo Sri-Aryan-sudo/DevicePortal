@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, verifyAdmin } = require('../middleware/auth');
 
 /**
  * @route   POST /api/auth/login
@@ -30,5 +30,19 @@ router.post('/logout', authController.logout);
  * @access  Private (requires authentication)
  */
 router.get('/me', authenticateToken, authController.getCurrentUser);
+
+/**
+ * @route   POST /api/auth/users
+ * @desc    Create a new user
+ * @access  Private (ADMIN only)
+ */
+router.post('/users', authenticateToken, verifyAdmin, authController.createUser);
+
+/**
+ * @route   GET /api/auth/users
+ * @desc    Get all users
+ * @access  Private (ADMIN only)
+ */
+router.get('/users', authenticateToken, verifyAdmin, authController.getAllUsers);
 
 module.exports = router;
