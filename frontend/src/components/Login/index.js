@@ -7,6 +7,7 @@ class Login extends Component {
     this.state = {
       identifier: '', // NTID or Email
       password: '',
+      rememberMe: true, // Default to true for persistent login
       loading: false,
       error: null,
       showPassword: false
@@ -27,9 +28,15 @@ class Login extends Component {
     }));
   }
 
+  handleToggleRememberMe = () => {
+    this.setState(prevState => ({
+      rememberMe: !prevState.rememberMe
+    }));
+  }
+
   handleSubmit = async (e) => {
     e.preventDefault();
-    const { identifier, password } = this.state;
+    const { identifier, password, rememberMe } = this.state;
 
     // Validation
     if (!identifier || !password) {
@@ -54,9 +61,10 @@ class Login extends Component {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Store token and user info
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userInfo', JSON.stringify(data.user));
+        // Store token and user info based on rememberMe choice
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('authToken', data.token);
+        storage.setItem('userInfo', JSON.stringify(data.user));
 
         // Call parent callback to update app state
         if (this.props.onLoginSuccess) {
@@ -85,7 +93,7 @@ class Login extends Component {
   }
 
   render() {
-    const { identifier, password, loading, error, showPassword } = this.state;
+    const { identifier, password, loading, error, showPassword, rememberMe } = this.state;
 
     return (
       <div className="login-container">
@@ -155,6 +163,19 @@ class Login extends Component {
                   {showPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
               </div>
+            </div>
+
+            <div className="form-group remember-me-group">
+              <label className="remember-me-label">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={this.handleToggleRememberMe}
+                  disabled={loading}
+                  className="remember-me-checkbox"
+                />
+                <span className="remember-me-text">Remember me</span>
+              </label>
             </div>
 
             <button

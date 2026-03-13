@@ -8,6 +8,7 @@ const getDevices = async (req, res) => {
       status = '',
       vendor = '',
       team = '',
+      modelType = '',
       sortBy = 'mac_address',
       sortOrder = 'asc',
       page = 1,
@@ -20,7 +21,7 @@ const getDevices = async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (mac_address ILIKE $${paramCount} OR model_name ILIKE $${paramCount} OR model_alias ILIKE $${paramCount} OR vendor ILIKE $${paramCount} OR team_name ILIKE $${paramCount})`;
+      query += ` AND (mac_address ILIKE $${paramCount} OR model_name ILIKE $${paramCount} OR model_alias ILIKE $${paramCount} OR model_type ILIKE $${paramCount} OR vendor ILIKE $${paramCount} OR team_name ILIKE $${paramCount})`;
       paramCount++;
     }
 
@@ -39,6 +40,12 @@ const getDevices = async (req, res) => {
     if (team) {
       params.push(team);
       query += ` AND team_name = $${paramCount}`;
+      paramCount++;
+    }
+
+    if (modelType) {
+      params.push(modelType);
+      query += ` AND model_type = $${paramCount}`;
       paramCount++;
     }
 

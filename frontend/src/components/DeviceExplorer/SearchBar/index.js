@@ -6,7 +6,7 @@ const SearchBar = memo(({ searchQuery, onSearchChange, onSearchClear }) => {
       <span className="search-icon">🔍</span>
       <input
         type="text"
-        placeholder="Search by Vendor, MAC Address, Model, or Alias..."
+        placeholder="Search by Vendor, Model Type, MAC Address, or Team..."
         value={searchQuery}
         onChange={onSearchChange}
         className="search-input"

@@ -80,7 +80,7 @@ class DeviceExplorer extends Component {
   async fetchDevices() {
     try {
       this.setState({ loading: true });
-      const { selectedFilters, sortBy, sortOrder, currentPage, itemsPerPage } = this.state;
+      const { selectedFilters, sortBy, sortOrder } = this.state;
 
       // Fetch all devices (no filters sent to backend for multi-select support)
       const params = {
@@ -131,20 +131,29 @@ class DeviceExplorer extends Component {
     }
   }
 
-  // Client-side filtering function
+  // Client-side filtering function with flexible search
   filterDevices(devices, searchQuery) {
     if (!searchQuery || searchQuery.trim() === '') {
       return devices;
     }
 
-    const query = searchQuery.toLowerCase().trim();
+    // Normalize search query: lowercase, replace underscores with spaces
+    const query = searchQuery.toLowerCase().trim().replace(/_/g, ' ');
+    
     return devices.filter(device => {
+      // Normalize model_type for matching (convert underscores to spaces)
+      const normalizedModelType = device.model_type 
+        ? device.model_type.toLowerCase().replace(/_/g, ' ')
+        : '';
+      
       return (
         (device.mac_address && device.mac_address.toLowerCase().includes(query)) ||
         (device.model_name && device.model_name.toLowerCase().includes(query)) ||
         (device.model_alias && device.model_alias.toLowerCase().includes(query)) ||
         (device.vendor && device.vendor.toLowerCase().includes(query)) ||
-        (device.team_name && device.team_name.toLowerCase().includes(query))
+        (device.team_name && device.team_name.toLowerCase().includes(query)) ||
+        // Flexible model_type search: allows partial matches without underscores
+        (normalizedModelType && normalizedModelType.includes(query))
       );
     });
   }

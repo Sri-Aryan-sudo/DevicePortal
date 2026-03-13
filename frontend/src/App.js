@@ -3,7 +3,9 @@ import Dashboard from './components/Dashboard';
 import DeviceExplorer from './components/DeviceExplorer';
 import DeviceDetail from './components/DeviceDetail';
 import UploadValidator from './components/UploadValidator';
+
 import UserManagement from './components/UserManagement';
+import CSVIngestion from './components/CSVIngestion';
 import Login from './components/Login';
 import './global.css';
 import './App.css';
@@ -149,6 +151,8 @@ class App extends Component {
         return <UploadValidator />;
       case 'user-management':
         return <UserManagement />;
+      case 'csv-ingestion':
+        return <CSVIngestion />;
       default:
         return <Dashboard onDeviceSelect={this.handleDeviceSelect} />;
     }
@@ -223,15 +227,19 @@ class App extends Component {
               {sidebarOpen && <span className="nav-label">Device Explorer</span>}
             </button>
 
-            <button 
-              className={`nav-item ${currentView === 'upload' ? 'active' : ''}`}
-              onClick={() => this.navigate('upload')}
-            >
-              <span className="nav-icon">⬆️</span>
-              {sidebarOpen && <span className="nav-label">Upload Validator</span>}
-            </button>
 
             
+
+            {/* POC-only: CSV Ingestion */}
+            {(currentUser?.role === 'POC' || currentUser?.role === 'ADMIN') && (
+              <button 
+                className={`nav-item ${currentView === 'csv-ingestion' ? 'active' : ''}`}
+                onClick={() => this.navigate('csv-ingestion')}
+              >
+                <span className="nav-icon">📊</span>
+                {sidebarOpen && <span className="nav-label">CSV Ingestion</span>}
+              </button>
+            )}
 
             {/* ADMIN-only: User Management */}
             {currentUser?.role === 'ADMIN' && (
