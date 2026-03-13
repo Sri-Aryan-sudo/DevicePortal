@@ -15,9 +15,6 @@ DB_CONFIG = {
     "port": "5432"
 }
 
-XUMO_FILE = r"C:\Users\satmak421\Downloads\portal\data-ingestion\data\Middle_Ware_Privatepool_Devices_Details(XUMO Devices).csv"
-STREAMING_FILE = r"C:\Users\satmak421\Downloads\portal\data-ingestion\data\Middle_Ware_Privatepool_Devices_Details(Streaming Devices).csv"
-
 OUTPUT_PREVIEW_FILE = "devices_preview_output.csv"
 
 # ==============================
@@ -45,25 +42,11 @@ COLUMN_MAPPING = {
 }
 
 DB_COLUMNS = [
-    "mac_address",
-    "model_name",
-    "model_alias",
-    "model_type",
-    "device_type",
-    "cats_type",
-    "vendor",
-    "rack",
-    "location_scope",
-    "location_site",
-    "placement_type",
-    "team_name",
-    "usage_purpose",
-    "owner_name",
-    "utilization_week_7",
-    "utilization_week_8",
-    "automation_filter",
-    "infra_tickets",
-    "device_repurpose"
+    "mac_address","model_name","model_alias","model_type","device_type",
+    "cats_type","vendor","rack","location_scope","location_site",
+    "placement_type","team_name","usage_purpose","owner_name",
+    "utilization_week_7","utilization_week_8","automation_filter",
+    "infra_tickets","device_repurpose"
 ]
 
 # ==============================
@@ -88,7 +71,9 @@ def is_valid_mac(mac):
 
     return re.match(pattern, mac) is not None
 
+
 def extract_vendor(model_type):
+
     if model_type is None:
         return None
 
@@ -98,6 +83,8 @@ def extract_vendor(model_type):
         return text.split("_")[0]
 
     return text
+
+
 # ==============================
 # DEVICE TYPE LOGIC
 # ==============================
@@ -106,7 +93,6 @@ def determine_device_type(row):
 
     text = ""
 
-    # Priority 1 → model_type
     if row.get("model_type"):
         text = str(row["model_type"]).upper()
 
@@ -116,7 +102,6 @@ def determine_device_type(row):
         if "PANEL" in text:
             return "PANEL"
 
-    # Priority 2 → model_name
     if row.get("model_name"):
         text = str(row["model_name"]).upper()
 
@@ -126,7 +111,6 @@ def determine_device_type(row):
         if "PANEL" in text:
             return "PANEL"
 
-    # Priority 3 → model_alias
     if row.get("model_alias"):
         text = str(row["model_alias"]).upper()
 
@@ -147,32 +131,27 @@ def clean_dataframe(file_path):
 
     df = pd.read_csv(file_path)
 
-    # Remove duplicate columns
     df = df.loc[:, ~df.columns.duplicated()]
 
     df.columns = df.columns.str.strip()
 
-    # Rename columns
     df = df.rename(columns=COLUMN_MAPPING)
 
-    # Determine device type
     df["device_type"] = df.apply(determine_device_type, axis=1)
 
-    # Ensure all DB columns exist
     for col in DB_COLUMNS:
         if col not in df.columns:
             df[col] = None
 
     df = df[DB_COLUMNS]
 
-    # Clean values
     for col in df.columns:
         df[col] = df[col].apply(safe_val)
 
-    # Remove invalid MAC rows
     df = df[df["mac_address"].apply(is_valid_mac)]
-    # Extract vendor from model_alias
+
     df["vendor"] = df["model_type"].apply(extract_vendor)
+
     return df
 
 
@@ -204,26 +183,15 @@ def insert_into_db(df):
 
 
 # ==============================
-# MAIN EXECUTION
+# INGESTION PIPELINE
 # ==============================
 
-if __name__ == "__main__":
+def run_ingestion(file_path):
 
-    print("Processing XUMO file...")
-    df_xumo = clean_dataframe(XUMO_FILE)
+    df = clean_dataframe(file_path)
 
-    print("Processing Streaming file...")
-    df_streaming = clean_dataframe(STREAMING_FILE)
+    insert_into_db(df)
 
-    final_df = pd.concat([df_xumo, df_streaming], ignore_index=True)
+    
 
-    print(f"Total valid rows to insert: {len(final_df)}")
-
-    print("Inserting into database...")
-    insert_into_db(final_df)
-
-    print("Creating preview output file...")
-    final_df.to_csv(OUTPUT_PREVIEW_FILE, index=False)
-
-    print("✅ Data injection completed successfully.")
-    print(f"Preview file created: {OUTPUT_PREVIEW_FILE}")
+    return len(df)
