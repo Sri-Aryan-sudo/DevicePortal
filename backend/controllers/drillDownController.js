@@ -239,6 +239,175 @@ const getAllVendorsBreakdown = async (req, res) => {
   }
 };
 
+// ============================================
+// NEW VENDOR-FIRST DRILL-DOWN
+// Tile → Vendors → Model Types → Teams → Devices
+// ============================================
+
+// Get vendors for a specific device type
+const getVendorBreakdownByType = async (req, res) => {
+  try {
+    const { deviceType } = req.params;
+    
+    const breakdown = await pool.query(`
+      SELECT vendor, COUNT(*) as count
+      FROM devices
+      WHERE device_type = $1 AND vendor IS NOT NULL
+      GROUP BY vendor
+      ORDER BY count DESC
+    `, [deviceType]);
+
+    const devices = await pool.query(`
+      SELECT *
+      FROM devices
+      WHERE device_type = $1
+      ORDER BY vendor
+    `, [deviceType]);
+
+    res.json({
+      breakdown: breakdown.rows,
+      devices: devices.rows,
+      level: 'vendor',
+      deviceType
+    });
+  } catch (error) {
+    console.error('Vendor breakdown by type error:', error);
+    res.status(500).json({ error: 'Failed to fetch vendor breakdown' });
+  }
+};
+
+// Get model types for a vendor (all device types)
+const getModelTypesByVendor = async (req, res) => {
+  try {
+    const { vendor } = req.params;
+    
+    const breakdown = await pool.query(`
+      SELECT model_type, COUNT(*) as count
+      FROM devices
+      WHERE vendor = $1 AND model_type IS NOT NULL
+      GROUP BY model_type
+      ORDER BY count DESC
+    `, [vendor]);
+
+    const devices = await pool.query(`
+      SELECT *
+      FROM devices
+      WHERE vendor = $1
+      ORDER BY model_type
+    `, [vendor]);
+
+    res.json({
+      breakdown: breakdown.rows,
+      devices: devices.rows,
+      level: 'model_type',
+      vendor
+    });
+  } catch (error) {
+    console.error('Model types by vendor error:', error);
+    res.status(500).json({ error: 'Failed to fetch model types' });
+  }
+};
+
+// Get model types for a vendor + device type
+const getModelTypesByVendorAndType = async (req, res) => {
+  try {
+    const { deviceType, vendor } = req.params;
+    
+    const breakdown = await pool.query(`
+      SELECT model_type, COUNT(*) as count
+      FROM devices
+      WHERE device_type = $1 AND vendor = $2 AND model_type IS NOT NULL
+      GROUP BY model_type
+      ORDER BY count DESC
+    `, [deviceType, vendor]);
+
+    const devices = await pool.query(`
+      SELECT *
+      FROM devices
+      WHERE device_type = $1 AND vendor = $2
+      ORDER BY model_type
+    `, [deviceType, vendor]);
+
+    res.json({
+      breakdown: breakdown.rows,
+      devices: devices.rows,
+      level: 'model_type',
+      deviceType,
+      vendor
+    });
+  } catch (error) {
+    console.error('Model types by vendor and type error:', error);
+    res.status(500).json({ error: 'Failed to fetch model types' });
+  }
+};
+
+// Get teams for a vendor + model type (all device types)
+const getTeamsByVendorAndModel = async (req, res) => {
+  try {
+    const { vendor, modelType } = req.params;
+    
+    const breakdown = await pool.query(`
+      SELECT team_name, COUNT(*) as count
+      FROM devices
+      WHERE vendor = $1 AND model_type = $2 AND team_name IS NOT NULL
+      GROUP BY team_name
+      ORDER BY count DESC
+    `, [vendor, modelType]);
+
+    const devices = await pool.query(`
+      SELECT *
+      FROM devices
+      WHERE vendor = $1 AND model_type = $2
+      ORDER BY team_name
+    `, [vendor, modelType]);
+
+    res.json({
+      breakdown: breakdown.rows,
+      devices: devices.rows,
+      level: 'team',
+      vendor,
+      modelType
+    });
+  } catch (error) {
+    console.error('Teams by vendor and model error:', error);
+    res.status(500).json({ error: 'Failed to fetch teams' });
+  }
+};
+
+// Get teams for device type + vendor + model type
+const getTeamsByTypeVendorAndModel = async (req, res) => {
+  try {
+    const { deviceType, vendor, modelType } = req.params;
+    
+    const breakdown = await pool.query(`
+      SELECT team_name, COUNT(*) as count
+      FROM devices
+      WHERE device_type = $1 AND vendor = $2 AND model_type = $3 AND team_name IS NOT NULL
+      GROUP BY team_name
+      ORDER BY count DESC
+    `, [deviceType, vendor, modelType]);
+
+    const devices = await pool.query(`
+      SELECT *
+      FROM devices
+      WHERE device_type = $1 AND vendor = $2 AND model_type = $3
+      ORDER BY team_name
+    `, [deviceType, vendor, modelType]);
+
+    res.json({
+      breakdown: breakdown.rows,
+      devices: devices.rows,
+      level: 'team',
+      deviceType,
+      vendor,
+      modelType
+    });
+  } catch (error) {
+    console.error('Teams by type, vendor and model error:', error);
+    res.status(500).json({ error: 'Failed to fetch teams' });
+  }
+};
+
 module.exports = {
   getTeamBreakdown,
   getVendorBreakdown,
@@ -246,5 +415,11 @@ module.exports = {
   getDeviceList,
   getDeviceTypeBreakdown,
   getTeamBreakdownForType,
-  getAllVendorsBreakdown
+  getAllVendorsBreakdown,
+  // New vendor-first drill-down
+  getVendorBreakdownByType,
+  getModelTypesByVendor,
+  getModelTypesByVendorAndType,
+  getTeamsByVendorAndModel,
+  getTeamsByTypeVendorAndModel
 };

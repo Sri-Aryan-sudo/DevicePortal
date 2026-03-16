@@ -7,7 +7,13 @@ const {
   getDeviceList,
   getDeviceTypeBreakdown,
   getTeamBreakdownForType,
-  getAllVendorsBreakdown
+  getAllVendorsBreakdown,
+  // New vendor-first drill-down
+  getVendorBreakdownByType,
+  getModelTypesByVendor,
+  getModelTypesByVendorAndType,
+  getTeamsByVendorAndModel,
+  getTeamsByTypeVendorAndModel
 } = require('../controllers/drillDownController');
 
 // ============================================
@@ -47,5 +53,27 @@ router.get('/drilldown/total/device-types/:deviceType/teams', getTeamBreakdownFo
 
 // Single level: All vendors breakdown
 router.get('/drilldown/vendors/all', getAllVendorsBreakdown);
+
+// ============================================
+// NEW: VENDOR-FIRST DRILL-DOWN
+// Tile → Vendors → Model Types → Teams → Devices
+// ============================================
+
+// Level 1: Vendors for a device type
+router.get('/drilldown/:deviceType/vendors', getVendorBreakdownByType);
+
+// Level 2a: Model types for a vendor (all device types)
+router.get('/drilldown/vendors/:vendor/models', getModelTypesByVendor);
+
+// Level 2b: Model types for a vendor + device type
+router.get('/drilldown/:deviceType/vendors/:vendor/models', getModelTypesByVendorAndType);
+
+// Level 3a: Teams for vendor + model type (all device types)
+router.get('/drilldown/vendors/:vendor/models/:modelType/teams', getTeamsByVendorAndModel);
+
+// Level 3b: Teams for device type + vendor + model type
+router.get('/drilldown/:deviceType/vendors/:vendor/models/:modelType/teams', getTeamsByTypeVendorAndModel);
+
+// Level 4: Final device list (use existing deviceAPI.getDevices with filters)
 
 module.exports = router;

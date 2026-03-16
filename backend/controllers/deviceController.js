@@ -8,6 +8,7 @@ const getDevices = async (req, res) => {
       status = '',
       vendor = '',
       team = '',
+      modelType = '',
       sortBy = 'mac_address',
       sortOrder = 'asc',
       page = 1,
@@ -20,7 +21,7 @@ const getDevices = async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (mac_address ILIKE $${paramCount} OR model_name ILIKE $${paramCount} OR model_alias ILIKE $${paramCount})`;
+      query += ` AND (mac_address ILIKE $${paramCount} OR model_name ILIKE $${paramCount} OR model_alias ILIKE $${paramCount} OR model_type ILIKE $${paramCount} OR vendor ILIKE $${paramCount} OR team_name ILIKE $${paramCount})`;
       paramCount++;
     }
 
@@ -39,6 +40,12 @@ const getDevices = async (req, res) => {
     if (team) {
       params.push(team);
       query += ` AND team_name = $${paramCount}`;
+      paramCount++;
+    }
+
+    if (modelType) {
+      params.push(modelType);
+      query += ` AND model_type = $${paramCount}`;
       paramCount++;
     }
 
@@ -185,6 +192,87 @@ const updateDevice = async (req, res) => {
   }
 };
 
+// POC/ADMIN-only update endpoint - restricted fields only
+const updateDeviceByPOC = async (req, res) => {
+  try {
+    const { mac } = req.params;
+    const { owner_name, team_name, usage_purpose, placement_type, location_site, device_repurpose } = req.body;
+
+    // Only allow POC to edit specific fields
+    const pocAllowedFields = [
+      'owner_name', 
+      'team_name', 
+      'usage_purpose', 
+      'placement_type', 
+      'location_site', 
+      'device_repurpose'
+    ];
+
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    // Only update fields that are provided and allowed
+    if (owner_name !== undefined) {
+      updates.push(`owner_name = $${paramCount}`);
+      values.push(owner_name);
+      paramCount++;
+    }
+    if (team_name !== undefined) {
+      updates.push(`team_name = $${paramCount}`);
+      values.push(team_name);
+      paramCount++;
+    }
+    if (usage_purpose !== undefined) {
+      updates.push(`usage_purpose = $${paramCount}`);
+      values.push(usage_purpose);
+      paramCount++;
+    }
+    if (placement_type !== undefined) {
+      updates.push(`placement_type = $${paramCount}`);
+      values.push(placement_type);
+      paramCount++;
+    }
+    if (location_site !== undefined) {
+      updates.push(`location_site = $${paramCount}`);
+      values.push(location_site);
+      paramCount++;
+    }
+    if (device_repurpose !== undefined) {
+      updates.push(`device_repurpose = $${paramCount}`);
+      values.push(device_repurpose);
+      paramCount++;
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    // Always update the timestamp
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(mac);
+
+    const query = `UPDATE devices SET ${updates.join(', ')} WHERE mac_address = $${paramCount} RETURNING *`;
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+
+    // Log the update
+    console.log(`Device ${mac} updated by ${req.user?.username || 'POC'} (${req.user?.role})`);
+
+    res.json({
+      success: true,
+      message: 'Device updated successfully',
+      device: result.rows[0]
+    });
+  } catch (error) {
+    console.error('POC update error:', error);
+    res.status(500).json({ error: 'Failed to update device' });
+  }
+};
+
 const deleteDevice = async (req, res) => {
   try {
     const { mac } = req.params;
@@ -251,6 +339,7 @@ module.exports = {
   getDeviceByMac,
   createDevice,
   updateDevice,
+  updateDeviceByPOC,
   deleteDevice,
   getStatistics,
   getFilterOptions

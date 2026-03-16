@@ -11,7 +11,7 @@ const DeviceTableRow = memo(({ device, index, onSelect }) => {
       <td>
         <span className="device-type-badge">{device.device_type}</span>
       </td>
-      <td>{device.model_name}</td>
+      <td>{device.model_type || '-'}</td>
       <td>{device.vendor}</td>
       <td>{device.team_name}</td>
       <td>{device.location_site}</td>
@@ -57,8 +57,8 @@ const DeviceTable = memo(({
             <th onClick={() => onSort('device_type')}>
               Type{renderSortIndicator('device_type')}
             </th>
-            <th onClick={() => onSort('model_name')}>
-              Model{renderSortIndicator('model_name')}
+            <th onClick={() => onSort('model_type')}>
+              Model Type{renderSortIndicator('model_type')}
             </th>
             <th onClick={() => onSort('vendor')}>
               Vendor{renderSortIndicator('vendor')}

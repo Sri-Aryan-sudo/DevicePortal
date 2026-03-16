@@ -9,7 +9,13 @@ class UploadValidator extends Component {
       uploadedFile: null,
       validationResults: null,
       isValidating: false,
-      uploadProgress: 0
+      uploadProgress: 0,
+      
+      // Upload to database state
+      isUploading: false,
+      uploadComplete: false,
+      uploadResults: null,
+      uploadError: null
     };
     this.fileInputRef = React.createRef();
   }
@@ -129,11 +135,69 @@ class UploadValidator extends Component {
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   }
 
+  handleUploadToDatabase = async () => {
+    const { uploadedFile } = this.state;
+    
+    if (!uploadedFile) {
+      alert('No file selected');
+      return;
+    }
+
+    this.setState({ 
+      isUploading: true, 
+      uploadError: null,
+      uploadResults: null 
+    });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+
+      // Get auth token
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      if (!token) {
+        throw new Error('Not authenticated. Please login.');
+      }
+
+      const response = await fetch('http://localhost:5000/api/upload-csv', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        this.setState({
+          isUploading: false,
+          uploadComplete: true,
+          uploadResults: data
+        });
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      this.setState({
+        isUploading: false,
+        uploadError: error.message || 'Failed to upload file to database'
+      });
+    }
+  }
+
   resetUpload = () => {
     this.setState({
       uploadedFile: null,
       validationResults: null,
-      uploadProgress: 0
+      uploadProgress: 0,
+      isUploading: false,
+      uploadComplete: false,
+      uploadResults: null,
+      uploadError: null
     });
     if (this.fileInputRef.current) {
       this.fileInputRef.current.value = '';
@@ -282,13 +346,49 @@ class UploadValidator extends Component {
           </div>
         )}
 
+        {/* Upload Results */}
+        {this.state.uploadComplete && this.state.uploadResults && (
+          <div className="upload-results glass-panel success">
+            <h4 className="panel-subtitle">✓ Upload Complete!</h4>
+            <div className="upload-stats">
+              <div className="stat-item">
+                <span className="stat-label">Inserted:</span>
+                <span className="stat-value success">{this.state.uploadResults.inserted}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Updated:</span>
+                <span className="stat-value info">{this.state.uploadResults.updated}</span>
+              </div>
+              {this.state.uploadResults.errors > 0 && (
+                <div className="stat-item">
+                  <span className="stat-label">Errors:</span>
+                  <span className="stat-value error">{this.state.uploadResults.errors}</span>
+                </div>
+              )}
+            </div>
+            <p className="upload-message">{this.state.uploadResults.message}</p>
+          </div>
+        )}
+
+        {/* Upload Error */}
+        {this.state.uploadError && (
+          <div className="upload-error glass-panel error">
+            <h4 className="panel-subtitle">⚠ Upload Failed</h4>
+            <p>{this.state.uploadError}</p>
+          </div>
+        )}
+
         <div className="action-buttons">
           <button className="btn btn-secondary" onClick={this.resetUpload}>
             Upload Another File
           </button>
-          {validationResults.isValid && (
-            <button className="btn btn-primary">
-              Proceed to Ingestion →
+          {validationResults.isValid && !this.state.uploadComplete && (
+            <button 
+              className="btn btn-primary"
+              onClick={this.handleUploadToDatabase}
+              disabled={this.state.isUploading}
+            >
+              {this.state.isUploading ? 'Uploading...' : '📤 Upload to Database'}
             </button>
           )}
         </div>
