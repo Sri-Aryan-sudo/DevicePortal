@@ -11,11 +11,11 @@ const { authenticateToken, verifyAdmin } = require('../middleware/auth');
 router.post('/login', authController.login);
 
 /**
- * @route   GET /api/auth/verify
+ * @route   POST /api/auth/verify
  * @desc    Verify JWT token validity
- * @access  Public
+ * @access  Private (requires valid token)
  */
-router.get('/verify', authController.verifyToken);
+router.post('/verify', authenticateToken, authController.verifyToken);
 
 /**
  * @route   POST /api/auth/logout

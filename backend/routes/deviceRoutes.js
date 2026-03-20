@@ -10,9 +10,9 @@ router.get('/statistics', deviceController.getStatistics);
 router.get('/filter-options', deviceController.getFilterOptions);
 
 // Protected routes (authentication required)
-router.post('/devices', deviceController.createDevice);
-router.put('/devices/:mac', deviceController.updateDevice);
-router.delete('/devices/:mac', deviceController.deleteDevice);
+router.post('/devices', authenticateToken, verifyPOCorAdmin, deviceController.createDevice);
+router.put('/devices/:mac', authenticateToken, verifyPOCorAdmin, deviceController.updateDevice);
+router.delete('/devices/:mac', authenticateToken, verifyPOCorAdmin, deviceController.deleteDevice);
 
 // POC/ADMIN-only route for editing device details from Device Detail page
 router.put('/devices/:mac/poc-edit', authenticateToken, verifyPOCorAdmin, deviceController.updateDeviceByPOC);

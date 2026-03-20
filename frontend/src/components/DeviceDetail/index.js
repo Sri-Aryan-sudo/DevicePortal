@@ -388,7 +388,9 @@ class DeviceDetail extends Component {
             ← Back to Explorer
           </button>
           <div className="header-actions">
-            <button className="btn btn-secondary">Edit Device</button>
+            {this.canEdit() && (
+              <button className="btn btn-secondary">Edit Device</button>
+            )}
             <button className="btn btn-primary">Export Details</button>
           </div>
         </div>

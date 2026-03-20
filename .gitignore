@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Python
+data-ingestion/uploadEnv/
+data-ingestion/__pycache__/
+*.pyc
+
+# Uploads
+data-ingestion/uploads/
+
+# Environment variables
+.env
+
+# Build output
+frontend/build/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log

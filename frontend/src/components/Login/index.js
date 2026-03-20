@@ -197,6 +197,19 @@ class Login extends Component {
             </button>
           </form>
 
+          <div className="login-divider">
+            <span className="divider-text">or</span>
+          </div>
+
+          <button
+            type="button"
+            className="viewer-button"
+            onClick={this.props.onViewerAccess}
+          >
+            <span className="viewer-icon">👁️</span>
+            <span>Continue as Viewer</span>
+          </button>
+
           <div className="login-footer">
             <p className="login-help">
               Need help? Contact IT Support
