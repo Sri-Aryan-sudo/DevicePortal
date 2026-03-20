@@ -34,6 +34,7 @@ export const authAPI = {
 export const deviceAPI = {
   getDevices: (params) => api.get('/devices', { params }),
   getDeviceByMac: (mac) => api.get(`/devices/${mac}`),
+  getAuditLog: (mac) => api.get(`/devices/${mac}/audit-log`),
   createDevice: (data) => api.post('/devices', data),
   updateDevice: (mac, data) => api.put(`/devices/${mac}`, data),
   updateDeviceByPOC: (mac, data, token) => api.put(`/devices/${mac}/poc-edit`, data, {

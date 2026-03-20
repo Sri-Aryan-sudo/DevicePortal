@@ -6,6 +6,7 @@ const { authenticateToken, verifyPOCorAdmin } = require('../middleware/auth');
 // Public routes (no authentication required)
 router.get('/devices', deviceController.getDevices);
 router.get('/devices/:mac', deviceController.getDeviceByMac);
+router.get('/devices/:mac/audit-log', deviceController.getAuditLog);
 router.get('/statistics', deviceController.getStatistics);
 router.get('/filter-options', deviceController.getFilterOptions);
 

@@ -167,10 +167,15 @@ def insert_into_db(df):
 
     cursor = conn.cursor()
 
+    update_cols = [c for c in DB_COLUMNS if c != 'mac_address']
+    update_set = ', '.join([f"{c} = EXCLUDED.{c}" for c in update_cols])
+    update_where = ' OR '.join([f"devices.{c} IS DISTINCT FROM EXCLUDED.{c}" for c in update_cols])
+
     insert_query = f"""
         INSERT INTO devices ({','.join(DB_COLUMNS)})
         VALUES ({','.join(['%s'] * len(DB_COLUMNS))})
-        ON CONFLICT (mac_address) DO NOTHING;
+        ON CONFLICT (mac_address) DO UPDATE SET {update_set}
+        WHERE {update_where};
     """
 
     data = [tuple(row) for row in df.values]
