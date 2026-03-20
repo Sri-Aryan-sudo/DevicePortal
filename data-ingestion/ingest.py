@@ -81,6 +81,8 @@ def extract_vendor(model_type):
 
     if "_" in text:
         return text.split("_")[0]
+    if "-" in text:
+        return text.split("-")[0]
 
     return text
 
