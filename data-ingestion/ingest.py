@@ -33,7 +33,7 @@ COLUMN_MAPPING = {
     "Placement Type": "placement_type",
     "Team Name": "team_name",
     "Used for": "usage_purpose",
-    "Device Owner (Primary)": "owner_name",
+    "Device Owner (Primary)": "primary_owner",
     "Utilisation % Week 7 (Feb 9 to Feb 15)": "utilization_week_7",
     "Utilisation % Week 8 (Feb 16 to Feb 22)": "utilization_week_8",
     "Automatics Filter name": "automation_filter",
@@ -44,7 +44,7 @@ COLUMN_MAPPING = {
 DB_COLUMNS = [
     "mac_address","model_name","model_alias","model_type","device_type",
     "cats_type","vendor","rack","location_scope","location_site",
-    "placement_type","team_name","usage_purpose","owner_name",
+    "placement_type","team_name","usage_purpose","primary_owner",
     "utilization_week_7","utilization_week_8","automation_filter",
     "infra_tickets","device_repurpose"
 ]
@@ -80,11 +80,11 @@ def extract_vendor(model_type):
     text = str(model_type).strip()
 
     if "_" in text:
-        return text.split("_")[0]
+        return text.split("_")[0].upper()
     if "-" in text:
-        return text.split("-")[0]
+        return text.split("-")[0].upper()
 
-    return text
+    return text.upper()
 
 
 # ==============================

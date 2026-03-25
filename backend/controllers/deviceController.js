@@ -139,7 +139,8 @@ const createDevice = async (req, res) => {
       placement_type,
       team_name,
       usage_purpose,
-      owner_name,
+      primary_owner,
+      current_user,
       utilization_week_7,
       utilization_week_8,
       automation_filter,
@@ -151,14 +152,14 @@ const createDevice = async (req, res) => {
       `INSERT INTO devices (
         mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
         location_scope, location_site, placement_type, team_name, usage_purpose,
-        owner_name, utilization_week_7, utilization_week_8, automation_filter,
+        primary_owner, "current_user", utilization_week_7, utilization_week_8, automation_filter,
         infra_tickets, device_repurpose
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING *`,
       [
         mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
         location_scope, location_site, placement_type, team_name, usage_purpose,
-        owner_name, utilization_week_7, utilization_week_8, automation_filter,
+        primary_owner, current_user, utilization_week_7, utilization_week_8, automation_filter,
         infra_tickets, device_repurpose
       ]
     );
@@ -180,7 +181,7 @@ const updateDevice = async (req, res) => {
     const allowedFields = [
       'model_name', 'model_alias', 'model_type', 'device_type', 'vendor', 'rack',
       'location_scope', 'location_site', 'placement_type', 'team_name',
-      'usage_purpose', 'owner_name', 'utilization_week_7', 'utilization_week_8',
+      'usage_purpose', 'current_user', 'utilization_week_7', 'utilization_week_8',
       'automation_filter', 'infra_tickets', 'device_repurpose'
     ];
 
@@ -198,7 +199,8 @@ const updateDevice = async (req, res) => {
 
     Object.keys(fields).forEach(field => {
       if (allowedFields.includes(field)) {
-        updates.push(`${field} = $${paramCount}`);
+        const colName = field === 'current_user' ? '"current_user"' : field;
+        updates.push(`${colName} = $${paramCount}`);
         values.push(fields[field]);
         fieldsToAudit[field] = fields[field];
         paramCount++;
@@ -229,7 +231,7 @@ const updateDevice = async (req, res) => {
 const updateDeviceByPOC = async (req, res) => {
   try {
     const { mac } = req.params;
-    const { owner_name, team_name, usage_purpose, placement_type, location_site, device_repurpose } = req.body;
+    const { current_user, team_name, usage_purpose, placement_type, location_site, device_repurpose } = req.body;
 
     // Fetch current record for audit comparison
     const currentResult = await pool.query('SELECT * FROM devices WHERE mac_address = $1', [mac]);
@@ -244,10 +246,10 @@ const updateDeviceByPOC = async (req, res) => {
     let paramCount = 1;
 
     // Only update fields that are provided and allowed
-    if (owner_name !== undefined) {
-      updates.push(`owner_name = $${paramCount}`);
-      values.push(owner_name);
-      fieldsToAudit.owner_name = owner_name;
+    if (current_user !== undefined) {
+      updates.push(`"current_user" = $${paramCount}`);
+      values.push(current_user);
+      fieldsToAudit.current_user = current_user;
       paramCount++;
     }
     if (team_name !== undefined) {
@@ -336,12 +338,16 @@ const getStatistics = async (req, res) => {
     const devicesByTeam = await pool.query(
       'SELECT team_name, COUNT(*) as count FROM devices WHERE team_name IS NOT NULL GROUP BY team_name ORDER BY count DESC'
     );
+    const devicesByPlacementType = await pool.query(
+      'SELECT placement_type, COUNT(*) as count FROM devices WHERE placement_type IS NOT NULL GROUP BY placement_type ORDER BY count DESC'
+    );
 
     res.json({
       total: parseInt(totalDevices.rows[0].count),
       byType: devicesByType.rows,
       byVendor: devicesByVendor.rows,
-      byTeam: devicesByTeam.rows
+      byTeam: devicesByTeam.rows,
+      byPlacementType: devicesByPlacementType.rows
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch statistics' });

@@ -9,7 +9,7 @@ class Dashboard extends Component {
     this.state = {
       kpis: [],
       devicesByTeam: [],
-      vendorDistribution: [],
+      placementTypeDistribution: [],
       recentIngestions: [],
       deviceGrowth: [],
       animationComplete: false,
@@ -26,6 +26,7 @@ class Dashboard extends Component {
       selectedTeam: null,
       selectedVendor: null,
       selectedModelType: null,
+      selectedPlacementType: null,
       loadingDrillDown: false
     };
   }
@@ -49,7 +50,7 @@ class Dashboard extends Component {
         { id: 2, label: 'PANEL Devices', value: panelCount.toLocaleString(), change: '+5.1%', trend: 'up', gradient: 'var(--gradient-success)', type: 'PANEL' },
         { id: 3, label: 'BOARD Devices', value: boardCount.toLocaleString(), change: '+3.4%', trend: 'up', gradient: 'var(--gradient-info)', type: 'BOARD' },
         { id: 4, label: 'STB Devices', value: stbCount.toLocaleString(), change: '-2.3%', trend: 'down', gradient: 'var(--gradient-warning)', type: 'STB' },
-        { id: 5, label: 'Vendors', value: stats.byVendor.length.toString(), change: '+12%', trend: 'up', gradient: 'var(--gradient-danger)', type: 'vendors' }
+        { id: 5, label: 'Placement Types', value: stats.byPlacementType.length.toString(), change: '+12%', trend: 'up', gradient: 'var(--gradient-danger)', type: 'placement_types' }
       ];
 
       const colors = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b'];
@@ -59,17 +60,17 @@ class Dashboard extends Component {
         color: colors[index % colors.length]
       }));
 
-      const totalVendorCount = stats.byVendor.reduce((sum, v) => sum + parseInt(v.count), 0);
-      const vendorDistribution = stats.byVendor.slice(0, 6).map(v => ({
-        vendor: v.vendor,
-        count: parseInt(v.count),
-        percentage: Math.round((parseInt(v.count) / totalVendorCount) * 100)
+      const totalPlacementCount = stats.byPlacementType.reduce((sum, p) => sum + parseInt(p.count), 0);
+      const placementTypeDistribution = stats.byPlacementType.slice(0, 6).map(p => ({
+        placement_type: p.placement_type,
+        count: parseInt(p.count),
+        percentage: Math.round((parseInt(p.count) / totalPlacementCount) * 100)
       }));
 
       this.setState({
         kpis,
         devicesByTeam,
-        vendorDistribution,
+        placementTypeDistribution,
         recentIngestions: [],
         deviceGrowth: [],
         loading: false,
@@ -148,21 +149,21 @@ class Dashboard extends Component {
       }
     }
     
-    // Vendors tile
-    else if (type === 'vendors') {
+    // Placement Types tile
+    else if (type === 'placement_types') {
       this.setState({ 
         loadingDrillDown: true, 
         showDrillDown: true,
-        drillDownType: 'vendors',
-        drillDownLevel: 'vendor_only'
+        drillDownType: 'placement_types',
+        drillDownLevel: 'placement_type'
       });
       
       try {
-        const response = await drillDownAPI.getAllVendorsBreakdown();
+        const response = await drillDownAPI.getAllPlacementTypesBreakdown();
         
         this.setState({
-          drillDownType: 'vendors',
-          drillDownLevel: 'vendor_only',
+          drillDownType: 'placement_types',
+          drillDownLevel: 'placement_type',
           drillDownData: response.data.breakdown,
           drillDownDevices: response.data.devices,
           loadingDrillDown: false,
@@ -173,7 +174,7 @@ class Dashboard extends Component {
         });
       } catch (error) {
         this.setState({ 
-          error: 'Failed to load vendor data', 
+          error: 'Failed to load placement type data', 
           showDrillDown: false, 
           loadingDrillDown: false 
         });
@@ -203,6 +204,31 @@ class Dashboard extends Component {
     }
   }
 
+  handlePlacementTypeClick = async (placementTypeItem) => {
+    this.setState({ loadingDrillDown: true });
+    
+    try {
+      const response = await drillDownAPI.getVendorsByPlacementType(placementTypeItem.placement_type);
+      
+      this.setState({
+        drillDownType: 'placement_types',
+        drillDownLevel: 'vendor',
+        drillDownData: response.data.breakdown,
+        drillDownDevices: response.data.devices,
+        selectedPlacementType: placementTypeItem.placement_type,
+        selectedVendor: null,
+        selectedModelType: null,
+        selectedTeam: null,
+        loadingDrillDown: false
+      });
+    } catch (error) {
+      this.setState({ 
+        error: 'Failed to load vendor data', 
+        loadingDrillDown: false 
+      });
+    }
+  }
+
   handleTeamClick = async (teamItem) => {
     const { selectedDeviceType, selectedVendor, selectedModelType, drillDownType } = this.state;
     this.setState({ loadingDrillDown: true });
@@ -210,7 +236,7 @@ class Dashboard extends Component {
     try {
       let response;
       
-      if (drillDownType === 'total') {
+      if (drillDownType === 'total' || drillDownType === 'placement_types') {
         response = await deviceAPI.getDevices({
           vendor: selectedVendor,
           modelType: selectedModelType,
@@ -251,7 +277,7 @@ class Dashboard extends Component {
     try {
       let response;
       
-      if (drillDownType === 'total') {
+      if (drillDownType === 'total' || drillDownType === 'placement_types') {
         response = await drillDownAPI.getModelTypesByVendor(vendorItem.vendor);
       } else {
         response = await drillDownAPI.getModelTypesByVendorAndType(selectedDeviceType, vendorItem.vendor);
@@ -279,7 +305,7 @@ class Dashboard extends Component {
     try {
       let response;
       
-      if (drillDownType === 'total') {
+      if (drillDownType === 'total' || drillDownType === 'placement_types') {
         response = await drillDownAPI.getTeamsByVendorAndModel(selectedVendor, modelTypeItem.model_type);
       } else {
         response = await drillDownAPI.getTeamsByTypeVendorAndModel(selectedDeviceType, selectedVendor, modelTypeItem.model_type);
@@ -301,7 +327,7 @@ class Dashboard extends Component {
   }
 
   handleNavigate = (target) => {
-    const { drillDownType, selectedDeviceType, selectedVendor, selectedModelType } = this.state;
+    const { drillDownType, selectedDeviceType, selectedVendor, selectedModelType, selectedPlacementType } = this.state;
     
     if (target === 'dashboard') {
       this.setState({
@@ -313,15 +339,27 @@ class Dashboard extends Component {
         selectedDeviceType: null,
         selectedTeam: null,
         selectedVendor: null,
-        selectedModelType: null
+        selectedModelType: null,
+        selectedPlacementType: null
       });
-    } 
-    else if (target === 'vendor') {
-      // Go back to vendor level - reload from KPI
-      const kpi = this.state.kpis.find(k => 
-        drillDownType === 'total' ? k.type === 'total' : k.type === selectedDeviceType
-      );
+    }
+    else if (target === 'placement_type') {
+      // Go back to placement type level
+      const kpi = this.state.kpis.find(k => k.type === 'placement_types');
       if (kpi) this.handleKPIClick(kpi);
+    }
+    else if (target === 'vendor') {
+      if (drillDownType === 'placement_types') {
+        // Go back to vendor level within placement type
+        const placementData = { placement_type: selectedPlacementType };
+        this.handlePlacementTypeClick(placementData);
+      } else {
+        // Go back to vendor level - reload from KPI
+        const kpi = this.state.kpis.find(k => 
+          drillDownType === 'total' ? k.type === 'total' : k.type === selectedDeviceType
+        );
+        if (kpi) this.handleKPIClick(kpi);
+      }
     }
     else if (target === 'model_type') {
       // Go back to model type level - reload from vendor
@@ -404,29 +442,29 @@ class Dashboard extends Component {
     );
   }
 
-  renderVendorDistribution() {
-    const { vendorDistribution } = this.state;
+  renderPlacementTypeDistribution() {
+    const { placementTypeDistribution } = this.state;
 
     return (
       <div className="glass-panel chart-panel">
-        <h3 className="panel-title">Vendor Distribution</h3>
+        <h3 className="panel-title">Placement Type Distribution</h3>
         <div className="vendor-chart">
-          {vendorDistribution.map((vendor, index) => (
+          {placementTypeDistribution.map((item, index) => (
             <div key={index} className="vendor-item">
               <div className="vendor-header">
-                <span className="vendor-name">{vendor.vendor}</span>
-                <span className="vendor-percentage">{vendor.percentage}%</span>
+                <span className="vendor-name">{item.placement_type}</span>
+                <span className="vendor-percentage">{item.percentage}%</span>
               </div>
               <div className="vendor-bar-track">
                 <div 
                   className="vendor-bar-fill"
                   style={{ 
-                    width: `${vendor.percentage}%`,
+                    width: `${item.percentage}%`,
                     animationDelay: `${index * 100}ms`
                   }}
                 />
               </div>
-              <div className="vendor-count">{vendor.count.toLocaleString()} devices</div>
+              <div className="vendor-count">{item.count.toLocaleString()} devices</div>
             </div>
           ))}
         </div>
@@ -476,7 +514,7 @@ class Dashboard extends Component {
     const { 
       kpis, loading, error, showDrillDown, drillDownType, drillDownLevel, 
       drillDownData, drillDownDevices, selectedDeviceType, selectedTeam, 
-      selectedVendor, selectedModelType, loadingDrillDown 
+      selectedVendor, selectedModelType, selectedPlacementType, loadingDrillDown 
     } = this.state;
 
     // Show drill-down view instead of dashboard
@@ -491,11 +529,13 @@ class Dashboard extends Component {
           selectedTeam={selectedTeam}
           selectedVendor={selectedVendor}
           selectedModelType={selectedModelType}
+          selectedPlacementType={selectedPlacementType}
           loading={loadingDrillDown}
           onDeviceTypeClick={this.handleDeviceTypeClick}
           onTeamClick={this.handleTeamClick}
           onVendorClick={this.handleVendorClick}
           onModelTypeClick={this.handleModelTypeClick}
+          onPlacementTypeClick={this.handlePlacementTypeClick}
           onNavigate={this.handleNavigate}
           onDeviceSelect={this.props.onDeviceSelect}
         />
@@ -553,7 +593,7 @@ class Dashboard extends Component {
             
           </div>
           <div className="chart-column-right">
-            {this.renderVendorDistribution()}
+            {this.renderPlacementTypeDistribution()}
             {this.renderDeviceGrowth()}
           </div>
         </div>

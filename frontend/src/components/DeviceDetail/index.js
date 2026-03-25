@@ -45,12 +45,13 @@ class DeviceDetail extends Component {
       const auditLogs = auditRes.data || [];
 
       // Derive timeline from key field changes
-      const timelineFields = ['team_name', 'owner_name', 'location_site', 'placement_type'];
+      const timelineFields = ['team_name', 'primary_owner', 'current_user', 'location_site', 'placement_type'];
       const timeline = auditLogs
         .filter(log => timelineFields.includes(log.field_name))
         .map(log => ({
           type: log.field_name === 'location_site' ? 'location' 
-              : log.field_name === 'owner_name' ? 'assignment'
+              : log.field_name === 'primary_owner' ? 'assignment'
+              : log.field_name === 'current_user' ? 'assignment'
               : log.field_name === 'team_name' ? 'assignment'
               : 'status',
           event: `${this.formatFieldName(log.field_name)} changed from "${log.old_value || '-'}" to "${log.new_value || '-'}"`,
@@ -109,7 +110,7 @@ class DeviceDetail extends Component {
     this.setState({
       isEditMode: true,
       editedFields: {
-        owner_name: device.owner_name || '',
+        current_user: device.current_user || '',
         team_name: device.team_name || '',
         usage_purpose: device.usage_purpose || '',
         placement_type: device.placement_type || '',
@@ -238,8 +239,13 @@ class DeviceDetail extends Component {
             </div>
           )}
           
+          {/* Primary Owner - always read-only */}
+          <div className="detail-row">
+            <span className="detail-label">Primary Owner</span>
+            <span className="detail-value">{device.primary_owner || 'Unassigned'}</span>
+          </div>
           {/* Editable Fields */}
-          {this.renderEditableField('Owner', 'owner_name', device.owner_name || 'Unassigned')}
+          {this.renderEditableField('Current User', 'current_user', device.current_user || 'Unassigned')}
           {this.renderEditableField('Team', 'team_name', device.team_name)}
           {this.renderEditableField('Location', 'location_site', device.location_site)}
           {this.renderEditableField('Placement Type', 'placement_type', device.placement_type)}
@@ -364,6 +370,10 @@ class DeviceDetail extends Component {
         <div className="current-location-badge">
           <span className="current-location-label">Current Location</span>
           <span className="current-location-value">{device?.location_site || 'Unknown'}</span>
+        </div>
+        <div className="current-location-badge" style={{ marginTop: '8px' }}>
+          <span className="current-location-label">Team</span>
+          <span className="current-location-value">{device?.team_name || 'Unassigned'}</span>
         </div>
         {locationHistory.length === 0 ? (
           <p className="empty-state-text">No location changes recorded yet.</p>

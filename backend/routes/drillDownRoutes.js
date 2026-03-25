@@ -13,7 +13,10 @@ const {
   getModelTypesByVendor,
   getModelTypesByVendorAndType,
   getTeamsByVendorAndModel,
-  getTeamsByTypeVendorAndModel
+  getTeamsByTypeVendorAndModel,
+  // Placement type drill-down
+  getAllPlacementTypesBreakdown,
+  getVendorsByPlacementType
 } = require('../controllers/drillDownController');
 
 // ============================================
@@ -75,5 +78,16 @@ router.get('/drilldown/vendors/:vendor/models/:modelType/teams', getTeamsByVendo
 router.get('/drilldown/:deviceType/vendors/:vendor/models/:modelType/teams', getTeamsByTypeVendorAndModel);
 
 // Level 4: Final device list (use existing deviceAPI.getDevices with filters)
+
+// ============================================
+// PLACEMENT TYPE DRILL-DOWN
+// Placement Types → Vendors → Model Types → Teams → Devices
+// ============================================
+
+// Level 1: All placement types breakdown
+router.get('/drilldown/placement-types/all', getAllPlacementTypesBreakdown);
+
+// Level 2: Vendors for a specific placement type
+router.get('/drilldown/placement-types/:placementType/vendors', getVendorsByPlacementType);
 
 module.exports = router;

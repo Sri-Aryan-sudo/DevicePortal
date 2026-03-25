@@ -95,7 +95,7 @@ const normalizeDevice = (device) => {
     placement_type: device.placement_type?.trim() || null,
     team_name: device.team_name?.trim(),
     usage_purpose: device.usage_purpose?.trim() || null,
-    owner_name: device.owner_name?.trim() || null,
+    primary_owner: device.primary_owner?.trim() || null,
     utilization_week_7: device.utilization_week_7 ? parseFloat(device.utilization_week_7) : null,
     utilization_week_8: device.utilization_week_8 ? parseFloat(device.utilization_week_8) : null,
     automation_filter: device.automation_filter?.trim() || null,
@@ -173,7 +173,7 @@ const uploadCSV = async (req, res) => {
           INSERT INTO devices (
             mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
             location_scope, location_site, placement_type, team_name, usage_purpose,
-            owner_name, utilization_week_7, utilization_week_8, automation_filter,
+            primary_owner, utilization_week_7, utilization_week_8, automation_filter,
             infra_tickets, device_repurpose
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
           ON CONFLICT (mac_address) 
@@ -189,7 +189,7 @@ const uploadCSV = async (req, res) => {
             placement_type = EXCLUDED.placement_type,
             team_name = EXCLUDED.team_name,
             usage_purpose = EXCLUDED.usage_purpose,
-            owner_name = EXCLUDED.owner_name,
+            primary_owner = EXCLUDED.primary_owner,
             utilization_week_7 = EXCLUDED.utilization_week_7,
             utilization_week_8 = EXCLUDED.utilization_week_8,
             automation_filter = EXCLUDED.automation_filter,
@@ -203,7 +203,7 @@ const uploadCSV = async (req, res) => {
           device.mac_address, device.model_name, device.model_alias, device.model_type,
           device.device_type, device.vendor, device.rack, device.location_scope,
           device.location_site, device.placement_type, device.team_name, device.usage_purpose,
-          device.owner_name, device.utilization_week_7, device.utilization_week_8,
+          device.primary_owner, device.utilization_week_7, device.utilization_week_8,
           device.automation_filter, device.infra_tickets, device.device_repurpose
         ]);
 

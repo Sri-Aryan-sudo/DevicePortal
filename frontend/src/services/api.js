@@ -74,6 +74,10 @@ export const drillDownAPI = {
   getModelTypesByVendorAndType: (deviceType, vendor) => api.get(`/drilldown/${deviceType}/vendors/${encodeURIComponent(vendor)}/models`),
   getTeamsByVendorAndModel: (vendor, modelType) => api.get(`/drilldown/vendors/${encodeURIComponent(vendor)}/models/${encodeURIComponent(modelType)}/teams`),
   getTeamsByTypeVendorAndModel: (deviceType, vendor, modelType) => api.get(`/drilldown/${deviceType}/vendors/${encodeURIComponent(vendor)}/models/${encodeURIComponent(modelType)}/teams`),
+
+  // Placement type drill-down APIs
+  getAllPlacementTypesBreakdown: () => api.get('/drilldown/placement-types/all'),
+  getVendorsByPlacementType: (placementType) => api.get(`/drilldown/placement-types/${encodeURIComponent(placementType)}/vendors`),
 };
 
 export default api;
