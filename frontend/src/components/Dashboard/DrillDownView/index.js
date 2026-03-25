@@ -123,6 +123,71 @@ class DrillDownView extends Component {
       );
     }
 
+    // Placement Types drill-down: Placement Types → Vendors → Models → Teams → Devices
+    if (type === 'placement_types') {
+      return (
+        <div className="breadcrumb">
+          <button className="breadcrumb-item" onClick={() => onNavigate('dashboard')}>
+            Dashboard
+          </button>
+          <span className="breadcrumb-separator">/</span>
+
+          {level === 'placement_type' && (
+            <span className="breadcrumb-item active">Placement Types</span>
+          )}
+
+          {(level === 'vendor' || level === 'model_type' || level === 'team' || level === 'devices') && (
+            <>
+              <button className="breadcrumb-item" onClick={() => onNavigate('placement_type')}>
+                Placement Types
+              </button>
+              <span className="breadcrumb-separator">/</span>
+            </>
+          )}
+
+          {level === 'vendor' && (
+            <span className="breadcrumb-item active">{this.props.selectedPlacementType} - Vendors</span>
+          )}
+
+          {(level === 'model_type' || level === 'team' || level === 'devices') && selectedVendor && (
+            <>
+              <button className="breadcrumb-item" onClick={() => onNavigate('vendor')}>
+                {this.props.selectedPlacementType} - Vendors
+              </button>
+              <span className="breadcrumb-separator">/</span>
+            </>
+          )}
+
+          {level === 'model_type' && selectedVendor && (
+            <span className="breadcrumb-item active">{selectedVendor} - Models</span>
+          )}
+
+          {(level === 'team' || level === 'devices') && selectedVendor && selectedModelType && (
+            <>
+              <button className="breadcrumb-item" onClick={() => onNavigate('model_type')}>
+                {selectedVendor} - Models
+              </button>
+              <span className="breadcrumb-separator">/</span>
+            </>
+          )}
+
+          {level === 'team' && selectedModelType && (
+            <span className="breadcrumb-item active">{selectedModelType} - Teams</span>
+          )}
+
+          {level === 'devices' && (
+            <>
+              <button className="breadcrumb-item" onClick={() => onNavigate('team')}>
+                {selectedModelType} - Teams
+              </button>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-item active">{selectedTeam} - Devices</span>
+            </>
+          )}
+        </div>
+      );
+    }
+
     return null;
   }
 
@@ -248,6 +313,8 @@ class DrillDownView extends Component {
 
     const title = type === 'total'
       ? 'Total Devices - Vendor Distribution'
+      : type === 'placement_types'
+      ? `${this.props.selectedPlacementType} - Vendor Distribution`
       : `${selectedDeviceType} - Vendor Distribution`;
 
     return (
@@ -337,7 +404,7 @@ class DrillDownView extends Component {
 
     const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
 
-    const title = type === 'total'
+    const title = type === 'total' || type === 'placement_types'
       ? `${selectedVendor} - Model Types`
       : `${selectedDeviceType} / ${selectedVendor} - Model Types`;
 
@@ -428,7 +495,7 @@ class DrillDownView extends Component {
 
     const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
 
-    const title = type === 'total'
+    const title = type === 'total' || type === 'placement_types'
       ? `${selectedVendor} / ${selectedModelType} - Team Distribution`
       : `${selectedDeviceType} / ${selectedVendor} / ${selectedModelType} - Team Distribution`;
 
@@ -509,7 +576,7 @@ class DrillDownView extends Component {
   renderDevicesOnlyView() {
     const { devices, selectedDeviceType, selectedTeam, selectedVendor, selectedModelType, type } = this.props;
 
-    const title = type === 'total'
+    const title = type === 'total' || type === 'placement_types'
       ? `${selectedVendor} / ${selectedModelType} / ${selectedTeam} - Devices`
       : `${selectedDeviceType} / ${selectedVendor} / ${selectedModelType} / ${selectedTeam} - Devices`;
 
@@ -523,6 +590,93 @@ class DrillDownView extends Component {
         </div>
 
         {this.renderDeviceTable(devices, `${selectedModelType} Device List`)}
+      </div>
+    );
+  }
+
+  // Placement type list view: shown after clicking Placement Types tile
+  renderPlacementTypeListView() {
+    const { data, onPlacementTypeClick } = this.props;
+
+    const COLORS = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b', '#fa709a', '#00f2fe'];
+
+    const pieData = data.map((item, index) => ({
+      name: item.placement_type,
+      value: parseInt(item.count),
+      fill: COLORS[index % COLORS.length]
+    }));
+
+    const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
+
+    return (
+      <div className="drilldown-content">
+        <div className="drilldown-header">
+          <h1 className="drilldown-title gradient-text">Placement Type Distribution</h1>
+          <p className="drilldown-subtitle">
+            Showing {data.length} placement type{data.length !== 1 ? 's' : ''} with {total} total devices.
+            Click a placement type to explore vendors.
+          </p>
+        </div>
+
+        <div className="drilldown-chart-section">
+          <div className="chart-wrapper">
+            <ResponsiveContainer width="100%" height={400}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={130}
+                  fill="#8884d8"
+                  dataKey="value"
+                  onClick={(_, index) => onPlacementTypeClick(data[index])}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Clickable placement type table */}
+        <div className="drilldown-table-section glass-panel">
+          <h3 className="table-title">Placement Types ({data.length})</h3>
+          <div className="table-wrapper">
+            <table className="drilldown-table">
+              <thead>
+                <tr>
+                  <th>Placement Type</th>
+                  <th>Device Count</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((item, index) => (
+                  <tr key={item.placement_type} style={{ animationDelay: `${index * 10}ms` }}>
+                    <td>{item.placement_type}</td>
+                    <td>{parseInt(item.count).toLocaleString()}</td>
+                    <td>
+                      <button
+                        className="btn-view-device"
+                        onClick={() => onPlacementTypeClick(item)}
+                        title="Explore vendors"
+                      >
+                        Explore →
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     );
   }
@@ -569,7 +723,7 @@ class DrillDownView extends Component {
                   <td>{device.vendor || '-'}</td>
                   <td>{device.team_name || '-'}</td>
                   <td>{device.location_site || '-'}</td>
-                  <td>{device.owner_name || 'Unassigned'}</td>
+                  <td>{device.primary_owner || 'Unassigned'}</td>
                   <td>
                     <button
                       className="btn-view-device"
@@ -613,7 +767,10 @@ class DrillDownView extends Component {
         {/* Vendors tile: read-only pie */}
         {type === 'vendors' && level === 'vendor_only' && this.renderVendorOnlyView()}
 
-        {/* NEW FLOW shared across total + category: Vendor → Model → Team → Devices */}
+        {/* Placement Types: first-level placement type list */}
+        {type === 'placement_types' && level === 'placement_type' && this.renderPlacementTypeListView()}
+
+        {/* NEW FLOW shared across total + category + placement_types: Vendor → Model → Team → Devices */}
         {level === 'vendor' && this.renderVendorView()}
         {level === 'model_type' && this.renderModelTypeView()}
         {level === 'team' && this.renderTeamView()}

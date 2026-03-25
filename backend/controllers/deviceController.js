@@ -1,5 +1,29 @@
 const pool = require('../config/db');
 
+// Helper: log field-level changes to audit table
+const logAuditChanges = async (macAddress, oldRecord, newFields, updatedBy) => {
+  const entries = [];
+  for (const [field, newValue] of Object.entries(newFields)) {
+    const oldValue = oldRecord[field];
+    const oldStr = oldValue == null ? '' : String(oldValue);
+    const newStr = newValue == null ? '' : String(newValue);
+    if (oldStr !== newStr) {
+      entries.push([macAddress, field, oldStr || null, newStr || null, updatedBy]);
+    }
+  }
+  if (entries.length > 0) {
+    const values = entries.map((_, i) => {
+      const base = i * 5;
+      return `($${base+1}, $${base+2}, $${base+3}, $${base+4}, $${base+5})`;
+    }).join(', ');
+    const params = entries.flat();
+    await pool.query(
+      `INSERT INTO device_audit_log (mac_address, field_name, old_value, new_value, updated_by) VALUES ${values}`,
+      params
+    );
+  }
+};
+
 const getDevices = async (req, res) => {
   try {
     const {
@@ -115,7 +139,8 @@ const createDevice = async (req, res) => {
       placement_type,
       team_name,
       usage_purpose,
-      owner_name,
+      primary_owner,
+      current_user,
       utilization_week_7,
       utilization_week_8,
       automation_filter,
@@ -127,14 +152,14 @@ const createDevice = async (req, res) => {
       `INSERT INTO devices (
         mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
         location_scope, location_site, placement_type, team_name, usage_purpose,
-        owner_name, utilization_week_7, utilization_week_8, automation_filter,
+        primary_owner, "current_user", utilization_week_7, utilization_week_8, automation_filter,
         infra_tickets, device_repurpose
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING *`,
       [
         mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
         location_scope, location_site, placement_type, team_name, usage_purpose,
-        owner_name, utilization_week_7, utilization_week_8, automation_filter,
+        primary_owner, current_user, utilization_week_7, utilization_week_8, automation_filter,
         infra_tickets, device_repurpose
       ]
     );
@@ -156,18 +181,28 @@ const updateDevice = async (req, res) => {
     const allowedFields = [
       'model_name', 'model_alias', 'model_type', 'device_type', 'vendor', 'rack',
       'location_scope', 'location_site', 'placement_type', 'team_name',
-      'usage_purpose', 'owner_name', 'utilization_week_7', 'utilization_week_8',
+      'usage_purpose', 'current_user', 'utilization_week_7', 'utilization_week_8',
       'automation_filter', 'infra_tickets', 'device_repurpose'
     ];
 
+    // Fetch current record for audit comparison
+    const currentResult = await pool.query('SELECT * FROM devices WHERE mac_address = $1', [mac]);
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+    const oldRecord = currentResult.rows[0];
+
     const updates = [];
     const values = [];
+    const fieldsToAudit = {};
     let paramCount = 1;
 
     Object.keys(fields).forEach(field => {
       if (allowedFields.includes(field)) {
-        updates.push(`${field} = $${paramCount}`);
+        const colName = field === 'current_user' ? '"current_user"' : field;
+        updates.push(`${colName} = $${paramCount}`);
         values.push(fields[field]);
+        fieldsToAudit[field] = fields[field];
         paramCount++;
       }
     });
@@ -182,9 +217,9 @@ const updateDevice = async (req, res) => {
     const query = `UPDATE devices SET ${updates.join(', ')} WHERE mac_address = $${paramCount} RETURNING *`;
     const result = await pool.query(query, values);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Device not found' });
-    }
+    // Log audit changes
+    const updatedBy = req.user?.fullName || req.user?.ntid || 'ADMIN';
+    await logAuditChanges(mac, oldRecord, fieldsToAudit, updatedBy);
 
     res.json(result.rows[0]);
   } catch (error) {
@@ -196,51 +231,55 @@ const updateDevice = async (req, res) => {
 const updateDeviceByPOC = async (req, res) => {
   try {
     const { mac } = req.params;
-    const { owner_name, team_name, usage_purpose, placement_type, location_site, device_repurpose } = req.body;
+    const { current_user, team_name, usage_purpose, placement_type, location_site, device_repurpose } = req.body;
 
-    // Only allow POC to edit specific fields
-    const pocAllowedFields = [
-      'owner_name', 
-      'team_name', 
-      'usage_purpose', 
-      'placement_type', 
-      'location_site', 
-      'device_repurpose'
-    ];
+    // Fetch current record for audit comparison
+    const currentResult = await pool.query('SELECT * FROM devices WHERE mac_address = $1', [mac]);
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+    const oldRecord = currentResult.rows[0];
 
     const updates = [];
     const values = [];
+    const fieldsToAudit = {};
     let paramCount = 1;
 
     // Only update fields that are provided and allowed
-    if (owner_name !== undefined) {
-      updates.push(`owner_name = $${paramCount}`);
-      values.push(owner_name);
+    if (current_user !== undefined) {
+      updates.push(`"current_user" = $${paramCount}`);
+      values.push(current_user);
+      fieldsToAudit.current_user = current_user;
       paramCount++;
     }
     if (team_name !== undefined) {
       updates.push(`team_name = $${paramCount}`);
       values.push(team_name);
+      fieldsToAudit.team_name = team_name;
       paramCount++;
     }
     if (usage_purpose !== undefined) {
       updates.push(`usage_purpose = $${paramCount}`);
       values.push(usage_purpose);
+      fieldsToAudit.usage_purpose = usage_purpose;
       paramCount++;
     }
     if (placement_type !== undefined) {
       updates.push(`placement_type = $${paramCount}`);
       values.push(placement_type);
+      fieldsToAudit.placement_type = placement_type;
       paramCount++;
     }
     if (location_site !== undefined) {
       updates.push(`location_site = $${paramCount}`);
       values.push(location_site);
+      fieldsToAudit.location_site = location_site;
       paramCount++;
     }
     if (device_repurpose !== undefined) {
       updates.push(`device_repurpose = $${paramCount}`);
       values.push(device_repurpose);
+      fieldsToAudit.device_repurpose = device_repurpose;
       paramCount++;
     }
 
@@ -255,12 +294,11 @@ const updateDeviceByPOC = async (req, res) => {
     const query = `UPDATE devices SET ${updates.join(', ')} WHERE mac_address = $${paramCount} RETURNING *`;
     const result = await pool.query(query, values);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Device not found' });
-    }
+    // Log audit changes
+    const updatedBy = req.user?.fullName || req.user?.ntid || 'POC';
+    await logAuditChanges(mac, oldRecord, fieldsToAudit, updatedBy);
 
-    // Log the update
-    console.log(`Device ${mac} updated by ${req.user?.username || 'POC'} (${req.user?.role})`);
+    console.log(`Device ${mac} updated by ${req.user?.ntid || 'POC'} (${req.user?.role})`);
 
     res.json({
       success: true,
@@ -300,12 +338,16 @@ const getStatistics = async (req, res) => {
     const devicesByTeam = await pool.query(
       'SELECT team_name, COUNT(*) as count FROM devices WHERE team_name IS NOT NULL GROUP BY team_name ORDER BY count DESC'
     );
+    const devicesByPlacementType = await pool.query(
+      'SELECT placement_type, COUNT(*) as count FROM devices WHERE placement_type IS NOT NULL GROUP BY placement_type ORDER BY count DESC'
+    );
 
     res.json({
       total: parseInt(totalDevices.rows[0].count),
       byType: devicesByType.rows,
       byVendor: devicesByVendor.rows,
-      byTeam: devicesByTeam.rows
+      byTeam: devicesByTeam.rows,
+      byPlacementType: devicesByPlacementType.rows
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch statistics' });
@@ -334,6 +376,19 @@ const getFilterOptions = async (req, res) => {
   }
 };
 
+const getAuditLog = async (req, res) => {
+  try {
+    const { mac } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM device_audit_log WHERE mac_address = $1 ORDER BY updated_at DESC',
+      [mac]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch audit log' });
+  }
+};
+
 module.exports = {
   getDevices,
   getDeviceByMac,
@@ -342,5 +397,6 @@ module.exports = {
   updateDeviceByPOC,
   deleteDevice,
   getStatistics,
-  getFilterOptions
+  getFilterOptions,
+  getAuditLog
 };

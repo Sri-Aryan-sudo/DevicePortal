@@ -9,6 +9,7 @@ class DeviceDetail extends Component {
       device: null,
       timeline: [],
       auditLog: [],
+      locationHistory: [],
       loading: true,
       error: null,
       
@@ -36,18 +37,53 @@ class DeviceDetail extends Component {
   async loadDeviceDetails(mac) {
     try {
       this.setState({ loading: true });
-      const response = await deviceAPI.getDeviceByMac(mac);
-      
+      const [deviceRes, auditRes] = await Promise.all([
+        deviceAPI.getDeviceByMac(mac),
+        deviceAPI.getAuditLog(mac)
+      ]);
+
+      const auditLogs = auditRes.data || [];
+
+      // Derive timeline from key field changes
+      const timelineFields = ['team_name', 'primary_owner', 'current_user', 'location_site', 'placement_type'];
+      const timeline = auditLogs
+        .filter(log => timelineFields.includes(log.field_name))
+        .map(log => ({
+          type: log.field_name === 'location_site' ? 'location' 
+              : log.field_name === 'primary_owner' ? 'assignment'
+              : log.field_name === 'current_user' ? 'assignment'
+              : log.field_name === 'team_name' ? 'assignment'
+              : 'status',
+          event: `${this.formatFieldName(log.field_name)} changed from "${log.old_value || '-'}" to "${log.new_value || '-'}"`,
+          date: new Date(log.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          user: log.updated_by
+        }));
+
+      // Derive location history from location_site changes
+      const locationHistory = auditLogs
+        .filter(log => log.field_name === 'location_site')
+        .map(log => ({
+          from: log.old_value || 'Unknown',
+          to: log.new_value || 'Unknown',
+          date: new Date(log.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          user: log.updated_by
+        }));
+
       this.setState({
-        device: response.data,
-        timeline: [],
-        auditLog: [],
+        device: deviceRes.data,
+        timeline,
+        auditLog: auditLogs,
+        locationHistory,
         loading: false,
         error: null
       });
     } catch (error) {
       this.setState({ error: 'Failed to load device details', loading: false });
     }
+  }
+
+  formatFieldName(field) {
+    return field.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   getTimelineIcon = (type) => {
@@ -74,7 +110,7 @@ class DeviceDetail extends Component {
     this.setState({
       isEditMode: true,
       editedFields: {
-        owner_name: device.owner_name || '',
+        current_user: device.current_user || '',
         team_name: device.team_name || '',
         usage_purpose: device.usage_purpose || '',
         placement_type: device.placement_type || '',
@@ -127,6 +163,9 @@ class DeviceDetail extends Component {
         saveSuccess: true,
         saveError: null
       });
+
+      // Reload audit data to reflect the new changes
+      await this.loadDeviceDetails(device.mac_address);
 
       // Hide success message after 3 seconds
       setTimeout(() => {
@@ -200,8 +239,13 @@ class DeviceDetail extends Component {
             </div>
           )}
           
+          {/* Primary Owner - always read-only */}
+          <div className="detail-row">
+            <span className="detail-label">Primary Owner</span>
+            <span className="detail-value">{device.primary_owner || 'Unassigned'}</span>
+          </div>
           {/* Editable Fields */}
-          {this.renderEditableField('Owner', 'owner_name', device.owner_name || 'Unassigned')}
+          {this.renderEditableField('Current User', 'current_user', device.current_user || 'Unassigned')}
           {this.renderEditableField('Team', 'team_name', device.team_name)}
           {this.renderEditableField('Location', 'location_site', device.location_site)}
           {this.renderEditableField('Placement Type', 'placement_type', device.placement_type)}
@@ -294,21 +338,68 @@ class DeviceDetail extends Component {
     return (
       <div className="timeline-panel glass-panel">
         <h3 className="panel-title">Assignment Timeline</h3>
-        <div className="timeline">
-          {timeline.map((item, index) => (
-            <div key={index} className="timeline-item" style={{ animationDelay: `${index * 100}ms` }}>
-              <div className="timeline-marker">
-                <span className="timeline-icon">{this.getTimelineIcon(item.type)}</span>
-              </div>
-              <div className="timeline-content">
-                <div className="timeline-event">{item.event}</div>
-                <div className="timeline-meta">
-                  {item.date} • {item.user}
+        {timeline.length === 0 ? (
+          <p className="empty-state-text">No assignment changes recorded yet.</p>
+        ) : (
+          <div className="timeline">
+            {timeline.map((item, index) => (
+              <div key={index} className="timeline-item" style={{ animationDelay: `${index * 100}ms` }}>
+                <div className="timeline-marker">
+                  <span className="timeline-icon">{this.getTimelineIcon(item.type)}</span>
+                </div>
+                <div className="timeline-content">
+                  <div className="timeline-event">{item.event}</div>
+                  <div className="timeline-meta">
+                    {item.date} • {item.user}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  renderLocationHistory() {
+    const { locationHistory, device } = this.state;
+
+    return (
+      <div className="location-history-panel glass-panel">
+        <h3 className="panel-title">📍 Location History</h3>
+        <div className="current-location-badge">
+          <span className="current-location-label">Current Location</span>
+          <span className="current-location-value">{device?.location_site || 'Unknown'}</span>
         </div>
+        <div className="current-location-badge" style={{ marginTop: '8px' }}>
+          <span className="current-location-label">Team</span>
+          <span className="current-location-value">{device?.team_name || 'Unassigned'}</span>
+        </div>
+        {locationHistory.length === 0 ? (
+          <p className="empty-state-text">No location changes recorded yet.</p>
+        ) : (
+          <div className="location-timeline">
+            {locationHistory.map((move, index) => (
+              <div key={index} className="location-move" style={{ animationDelay: `${index * 120}ms` }}>
+                <div className="location-move-indicator">
+                  <div className="location-dot from" />
+                  <div className="location-connector" />
+                  <div className="location-dot to" />
+                </div>
+                <div className="location-move-details">
+                  <div className="location-move-row">
+                    <span className="location-from">{move.from}</span>
+                    <span className="location-arrow">→</span>
+                    <span className="location-to">{move.to}</span>
+                  </div>
+                  <div className="location-move-meta">
+                    {move.date} • by {move.user}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -319,34 +410,36 @@ class DeviceDetail extends Component {
     return (
       <div className="audit-panel glass-panel">
         <h3 className="panel-title">Audit Log</h3>
-        <div className="audit-table-container">
-          <table className="audit-table">
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Action</th>
-                <th>Field</th>
-                <th>Old Value</th>
-                <th>New Value</th>
-                <th>User</th>
-              </tr>
-            </thead>
-            <tbody>
-              {auditLog.map((log, index) => (
-                <tr key={index} style={{ animationDelay: `${index * 50}ms` }}>
-                  <td className="mono">{log.timestamp}</td>
-                  <td>
-                    <span className="action-badge">{log.action}</span>
-                  </td>
-                  <td className="mono">{log.field}</td>
-                  <td className="old-value">{log.oldValue}</td>
-                  <td className="new-value">{log.newValue}</td>
-                  <td className="mono">{log.user}</td>
+        {auditLog.length === 0 ? (
+          <p className="empty-state-text">No changes have been recorded for this device.</p>
+        ) : (
+          <div className="audit-table-container">
+            <table className="audit-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Field</th>
+                  <th>Old Value</th>
+                  <th>New Value</th>
+                  <th>Updated By</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {auditLog.map((log, index) => (
+                  <tr key={log.id || index} style={{ animationDelay: `${index * 50}ms` }}>
+                    <td className="mono">
+                      {new Date(log.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="mono">{this.formatFieldName(log.field_name)}</td>
+                    <td className="old-value">{log.old_value || '-'}</td>
+                    <td className="new-value">{log.new_value || '-'}</td>
+                    <td className="mono">{log.updated_by}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     );
   }
@@ -387,10 +480,6 @@ class DeviceDetail extends Component {
           >
             ← Back to Explorer
           </button>
-          <div className="header-actions">
-            <button className="btn btn-secondary">Edit Device</button>
-            <button className="btn btn-primary">Export Details</button>
-          </div>
         </div>
 
         <div className="detail-grid">
@@ -399,46 +488,7 @@ class DeviceDetail extends Component {
             {this.renderTimeline()}
           </div>
           <div className="detail-sidebar">
-            <div className="location-viz glass-panel">
-              <h3 className="panel-title">Location Visualization</h3>
-              <div className="location-map">
-                <div className="building-layout">
-                  <div className="lab-section lab-a active">
-                    <span className="lab-label">Lab A</span>
-                    <div className="rack-indicator">
-                      <div className="rack active">R1</div>
-                      <div className="rack">R2</div>
-                      <div className="rack highlight">R3</div>
-                    </div>
-                  </div>
-                  <div className="lab-section lab-b">
-                    <span className="lab-label">Lab B</span>
-                    <div className="rack-indicator">
-                      <div className="rack">R1</div>
-                      <div className="rack">R2</div>
-                      <div className="rack">R3</div>
-                    </div>
-                  </div>
-                  <div className="lab-section lab-c">
-                    <span className="lab-label">Lab C</span>
-                    <div className="rack-indicator">
-                      <div className="rack">R1</div>
-                      <div className="rack">R2</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="location-info">
-                  <div className="location-detail">
-                    <span className="location-icon">🏢</span>
-                    <span>{device.building}</span>
-                  </div>
-                  <div className="location-detail">
-                    <span className="location-icon">📍</span>
-                    <span>{device.location}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {this.renderLocationHistory()}
           </div>
         </div>
 

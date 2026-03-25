@@ -36,7 +36,7 @@ class UploadValidator extends Component {
     'location_site',
     'placement_type',
     'usage_purpose',
-    'owner_name',
+    'primary_owner',
     'utilization_week_7',
     'utilization_week_8',
     'automation_filter',

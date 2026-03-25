@@ -19,7 +19,7 @@ const login = async (req, res) => {
 
     // Find user by NTID or email - ✅ FIXED: using user_id not id
     const userQuery = `
-      SELECT user_id, ntid, email, password_hash, role, full_name, department, is_active
+      SELECT user_id, ntid, email, password_hash, role, full_name, team_name, is_active
       FROM users 
       WHERE (LOWER(ntid) = LOWER($1) OR LOWER(email) = LOWER($1))
       AND is_active = true
@@ -74,7 +74,7 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         fullName: user.full_name,
-        department: user.department
+        teamName: user.team_name
       }
     });
 
@@ -94,7 +94,7 @@ const verifyToken = async (req, res) => {
 
     // Fetch fresh user data from database - ✅ FIXED: using user_id
     const result = await pool.query(
-      `SELECT user_id, ntid, email, role, full_name, department, is_active 
+      `SELECT user_id, ntid, email, role, full_name, team_name, is_active 
        FROM users 
        WHERE user_id = $1 AND is_active = true`,
       [userId]
@@ -116,7 +116,7 @@ const verifyToken = async (req, res) => {
         email: user.email,
         role: user.role,
         fullName: user.full_name,
-        department: user.department
+        teamName: user.team_name
       }
     });
 
@@ -157,7 +157,7 @@ const getCurrentUser = async (req, res) => {
 
     // ✅ FIXED: using user_id
     const result = await pool.query(
-      `SELECT user_id, ntid, email, role, full_name, department, last_login, created_at 
+      `SELECT user_id, ntid, email, role, full_name, team_name, last_login, created_at 
        FROM users 
        WHERE user_id = $1 AND is_active = true`,
       [userId]
@@ -179,7 +179,7 @@ const getCurrentUser = async (req, res) => {
         email: user.email,
         role: user.role,
         fullName: user.full_name,
-        department: user.department,
+        teamName: user.team_name,
         lastLogin: user.last_login,
         memberSince: user.created_at
       }
@@ -196,7 +196,7 @@ const getCurrentUser = async (req, res) => {
 // Create new user (ADMIN only)
 const createUser = async (req, res) => {
   try {
-    const { ntid, email, password, role, fullName, department } = req.body;
+    const { ntid, email, password, role, fullName, teamName } = req.body;
 
     // Validate required fields
     if (!ntid || !email || !password || !role) {
@@ -257,9 +257,9 @@ const createUser = async (req, res) => {
 
     // Insert new user
     const insertQuery = `
-      INSERT INTO users (ntid, email, password_hash, role, full_name, department, is_active)
+      INSERT INTO users (ntid, email, password_hash, role, full_name, team_name, is_active)
       VALUES ($1, $2, $3, $4, $5, $6, true)
-      RETURNING user_id, ntid, email, role, full_name, department, is_active, created_at
+      RETURNING user_id, ntid, email, role, full_name, team_name, is_active, created_at
     `;
 
     const result = await pool.query(insertQuery, [
@@ -268,7 +268,7 @@ const createUser = async (req, res) => {
       passwordHash,
       role,
       fullName || null,
-      department || null
+      teamName || null
     ]);
 
     const newUser = result.rows[0];
@@ -282,7 +282,7 @@ const createUser = async (req, res) => {
         email: newUser.email,
         role: newUser.role,
         fullName: newUser.full_name,
-        department: newUser.department,
+        teamName: newUser.team_name,
         isActive: newUser.is_active,
         createdAt: newUser.created_at
       }
@@ -302,7 +302,7 @@ const createUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT user_id, ntid, email, role, full_name, department, is_active, last_login, created_at
+      SELECT user_id, ntid, email, role, full_name, team_name, is_active, last_login, created_at
       FROM users
       ORDER BY created_at DESC
     `);
@@ -315,7 +315,7 @@ const getAllUsers = async (req, res) => {
         email: user.email,
         role: user.role,
         fullName: user.full_name,
-        department: user.department,
+        teamName: user.team_name,
         isActive: user.is_active,
         lastLogin: user.last_login,
         createdAt: user.created_at

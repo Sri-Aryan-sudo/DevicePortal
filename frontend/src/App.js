@@ -17,6 +17,7 @@ class App extends Component {
     // Check for existing auth on mount
     const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     const userInfo = localStorage.getItem('userInfo') || sessionStorage.getItem('userInfo');
+    const viewerMode = sessionStorage.getItem('viewerMode');
     
     this.state = {
       // Authentication state
@@ -31,8 +32,14 @@ class App extends Component {
       selectedDevice: null
     };
     
+    // If viewer mode, grant access without token
+    if (viewerMode === 'true') {
+      this.state.isAuthenticated = true;
+      this.state.currentUser = { role: 'VIEWER', fullName: 'Viewer' };
+      this.state.authLoading = false;
+    }
     // If token exists, verify it
-    if (authToken && userInfo) {
+    else if (authToken && userInfo) {
       this.state.authToken = authToken;
       try {
         this.state.currentUser = JSON.parse(userInfo);
@@ -43,6 +50,11 @@ class App extends Component {
   }
 
   async componentDidMount() {
+    // Skip token verification if in viewer mode
+    if (this.state.currentUser?.role === 'VIEWER' && !this.state.authToken) {
+      return;
+    }
+
     // Verify existing token if present
     const { authToken } = this.state;
     
@@ -81,11 +93,24 @@ class App extends Component {
   }
 
   handleLoginSuccess = (token, user) => {
+    // Clear viewer mode if logging in
+    sessionStorage.removeItem('viewerMode');
     this.setState({
       isAuthenticated: true,
       authToken: token,
       currentUser: user,
       authLoading: false
+    });
+  }
+
+  handleViewerAccess = () => {
+    sessionStorage.setItem('viewerMode', 'true');
+    this.setState({
+      isAuthenticated: true,
+      authToken: null,
+      currentUser: { role: 'VIEWER', fullName: 'Viewer' },
+      authLoading: false,
+      currentView: 'dashboard'
     });
   }
 
@@ -95,6 +120,7 @@ class App extends Component {
     localStorage.removeItem('userInfo');
     sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('userInfo');
+    sessionStorage.removeItem('viewerMode');
     
     // Reset state
     this.setState({
@@ -188,8 +214,10 @@ class App extends Component {
 
     // Show login page if not authenticated
     if (!isAuthenticated) {
-      return <Login onLoginSuccess={this.handleLoginSuccess} />;
+      return <Login onLoginSuccess={this.handleLoginSuccess} onViewerAccess={this.handleViewerAccess} />;
     }
+
+    const isViewer = currentUser?.role === 'VIEWER' && !this.state.authToken;
 
     // Show main app if authenticated
     return (
@@ -267,13 +295,23 @@ class App extends Component {
               )}
             </div>
             {sidebarOpen && (
-              <button 
-                className="logout-button"
-                onClick={this.handleLogout}
-                title="Logout"
-              >
-                🚪 Logout
-              </button>
+              isViewer ? (
+                <button 
+                  className="logout-button"
+                  onClick={this.handleLogout}
+                  title="Go to Login"
+                >
+                  🔐 Login
+                </button>
+              ) : (
+                <button 
+                  className="logout-button"
+                  onClick={this.handleLogout}
+                  title="Logout"
+                >
+                  🚪 Logout
+                </button>
+              )
             )}
           </div>
         </aside>
