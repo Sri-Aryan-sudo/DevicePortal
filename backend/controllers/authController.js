@@ -1,9 +1,10 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const config = require('../config/env');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
-const JWT_EXPIRES_IN = '8h'; // Token valid for 8 hours
+const JWT_SECRET = config.JWT_SECRET;
+const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN;
 
 // Login endpoint
 const login = async (req, res) => {
@@ -79,7 +80,7 @@ const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Login error:', error.message);
     res.status(500).json({ 
       error: 'Login failed. Please try again.' 
     });
@@ -121,7 +122,7 @@ const verifyToken = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Token verification error:', error);
+    console.error('Token verification error:', error.message);
     res.status(500).json({ 
       error: 'Failed to verify token' 
     });
@@ -135,7 +136,7 @@ const logout = async (req, res) => {
     // But we can log it for audit purposes
     const { userId } = req.user;
 
-    console.log(`User ${userId} logged out at ${new Date().toISOString()}`);
+
 
     res.json({
       success: true,
@@ -143,7 +144,7 @@ const logout = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('Logout error:', error.message);
     res.status(500).json({ 
       error: 'Logout failed' 
     });
@@ -186,7 +187,7 @@ const getCurrentUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error('Get current user error:', error.message);
     res.status(500).json({ 
       error: 'Failed to fetch user profile' 
     });
@@ -253,7 +254,7 @@ const createUser = async (req, res) => {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, config.BCRYPT_ROUNDS);
 
     // Insert new user
     const insertQuery = `
@@ -288,10 +289,10 @@ const createUser = async (req, res) => {
       }
     });
 
-    console.log(`User ${newUser.ntid} created by ADMIN ${req.user?.ntid || 'unknown'}`);
+
 
   } catch (error) {
-    console.error('Create user error:', error);
+    console.error('Create user error:', error.message);
     res.status(500).json({ 
       error: 'Failed to create user' 
     });
@@ -323,7 +324,7 @@ const getAllUsers = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get all users error:', error);
+    console.error('Get all users error:', error.message);
     res.status(500).json({ 
       error: 'Failed to fetch users' 
     });

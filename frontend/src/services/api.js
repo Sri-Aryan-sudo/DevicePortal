@@ -48,11 +48,6 @@ export const deviceAPI = {
   getAllDevices: (params) => api.get('/devices', { params: { ...params, limit: 100000, page: 1 } }),
 };
 
-// Data Quality API
-export const dataQualityAPI = {
-  getQualityMetrics: () => api.get('/data-quality'),
-};
-
 // Drill-Down API
 export const drillDownAPI = {
   // Category drill-down (PANEL, BOARD, STB)

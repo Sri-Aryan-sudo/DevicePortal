@@ -20,9 +20,9 @@ router.post('/verify', authenticateToken, authController.verifyToken);
 /**
  * @route   POST /api/auth/logout
  * @desc    Logout user (client-side token removal)
- * @access  Public
+ * @access  Private (requires valid token)
  */
-router.post('/logout', authController.logout);
+router.post('/logout', authenticateToken, authController.logout);
 
 /**
  * @route   GET /api/auth/me

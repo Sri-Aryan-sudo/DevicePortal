@@ -126,7 +126,7 @@ const uploadCSV = async (req, res) => {
       }
     } catch (parseError) {
       fs.unlinkSync(filePath); // Clean up file
-      return res.status(400).json({ error: 'Failed to parse file', details: parseError.message });
+      return res.status(400).json({ error: 'Failed to parse file. Ensure the file is a valid CSV or XLSX.' });
     }
 
     // Validate all devices
@@ -225,9 +225,6 @@ const uploadCSV = async (req, res) => {
     // Clean up uploaded file
     fs.unlinkSync(filePath);
 
-    // Log ingestion
-    console.log(`CSV Ingestion by ${req.user?.username || 'POC'}: ${insertedCount} inserted, ${updatedCount} updated, ${errorCount} errors`);
-
     res.json({
       success: true,
       message: 'CSV processed successfully',
@@ -247,8 +244,8 @@ const uploadCSV = async (req, res) => {
       fs.unlinkSync(req.file.path);
     }
     
-    console.error('CSV upload error:', error);
-    res.status(500).json({ error: 'Failed to process CSV file', details: error.message });
+    console.error('CSV upload error:', error.message);
+    res.status(500).json({ error: 'Failed to process CSV file' });
   }
 };
 

@@ -298,15 +298,13 @@ const updateDeviceByPOC = async (req, res) => {
     const updatedBy = req.user?.fullName || req.user?.ntid || 'POC';
     await logAuditChanges(mac, oldRecord, fieldsToAudit, updatedBy);
 
-    console.log(`Device ${mac} updated by ${req.user?.ntid || 'POC'} (${req.user?.role})`);
-
     res.json({
       success: true,
       message: 'Device updated successfully',
       device: result.rows[0]
     });
   } catch (error) {
-    console.error('POC update error:', error);
+    console.error('POC update error:', error.message);
     res.status(500).json({ error: 'Failed to update device' });
   }
 };

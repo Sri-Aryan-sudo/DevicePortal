@@ -1,21 +1,20 @@
+import os
 import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_batch
 import re
 
 # ==============================
-# CONFIG
+# CONFIG — read from environment
 # ==============================
 
 DB_CONFIG = {
-    "host": "localhost",
-    "database": "device-inventory",
-    "user": "postgres",
-    "password": "1234",
-    "port": "5432"
+    "host": os.environ.get("DB_HOST", "localhost"),
+    "database": os.environ.get("DB_NAME", "device-inventory"),
+    "user": os.environ.get("DB_USER", "postgres"),
+    "password": os.environ.get("DB_PASSWORD", ""),
+    "port": os.environ.get("DB_PORT", "5432"),
 }
-
-OUTPUT_PREVIEW_FILE = "devices_preview_output.csv"
 
 # ==============================
 # COLUMN MAPPING
@@ -165,28 +164,30 @@ def insert_into_db(df):
 
     conn = psycopg2.connect(**DB_CONFIG)
 
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    update_cols = [c for c in DB_COLUMNS if c != 'mac_address']
-    update_set = ', '.join([f"{c} = EXCLUDED.{c}" for c in update_cols])
-    update_where = ' OR '.join([f"devices.{c} IS DISTINCT FROM EXCLUDED.{c}" for c in update_cols])
+        update_cols = [c for c in DB_COLUMNS if c != 'mac_address']
+        update_set = ', '.join([f"{c} = EXCLUDED.{c}" for c in update_cols])
+        update_where = ' OR '.join([f"devices.{c} IS DISTINCT FROM EXCLUDED.{c}" for c in update_cols])
 
-    insert_query = f"""
-        INSERT INTO devices ({','.join(DB_COLUMNS)})
-        VALUES ({','.join(['%s'] * len(DB_COLUMNS))})
-        ON CONFLICT (mac_address) DO UPDATE SET {update_set}
-        WHERE {update_where};
-    """
+        insert_query = f"""
+            INSERT INTO devices ({','.join(DB_COLUMNS)})
+            VALUES ({','.join(['%s'] * len(DB_COLUMNS))})
+            ON CONFLICT (mac_address) DO UPDATE SET {update_set}
+            WHERE {update_where};
+        """
 
-    data = [tuple(row) for row in df.values]
+        data = [tuple(row) for row in df.values]
 
-    execute_batch(cursor, insert_query, data)
+        execute_batch(cursor, insert_query, data)
 
-    conn.commit()
-
-    cursor.close()
-
-    conn.close()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 # ==============================
