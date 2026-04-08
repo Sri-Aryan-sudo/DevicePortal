@@ -413,7 +413,7 @@ class Dashboard extends Component {
 
     return (
       <div className="glass-panel chart-panel">
-        <h3 className="panel-title">Devices by Team</h3>
+        <h3 className="panel-title">Devices by Primary Team</h3>
         <div className="team-chart">
           {devicesByTeam.map((item, index) => (
             <div key={index} className="team-row">

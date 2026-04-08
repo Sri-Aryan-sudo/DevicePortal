@@ -64,7 +64,7 @@ const DeviceTable = memo(({
               Vendor{renderSortIndicator('vendor')}
             </th>
             <th onClick={() => onSort('team_name')}>
-              Team{renderSortIndicator('team_name')}
+              Primary Team{renderSortIndicator('team_name')}
             </th>
             <th onClick={() => onSort('location_site')}>
               Location{renderSortIndicator('location_site')}

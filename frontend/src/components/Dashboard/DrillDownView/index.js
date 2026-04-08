@@ -705,7 +705,7 @@ class DrillDownView extends Component {
                 <th>Model Type</th>
                 <th>Device Type</th>
                 <th>Vendor</th>
-                <th>Team</th>
+                <th>Primary Team</th>
                 <th>Location</th>
                 <th>Owner</th>
                 <th>Actions</th>

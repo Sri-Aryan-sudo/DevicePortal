@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS devices (
   location_site      VARCHAR(255),
   placement_type     VARCHAR(255),
   team_name          VARCHAR(255),
+  current_team       VARCHAR(255),
   usage_purpose      VARCHAR(255),
   primary_owner      VARCHAR(255),
   "current_user"     VARCHAR(255),
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS devices (
 CREATE INDEX IF NOT EXISTS idx_devices_device_type    ON devices (device_type);
 CREATE INDEX IF NOT EXISTS idx_devices_vendor         ON devices (vendor);
 CREATE INDEX IF NOT EXISTS idx_devices_team_name      ON devices (team_name);
+CREATE INDEX IF NOT EXISTS idx_devices_current_team    ON devices (current_team);
 CREATE INDEX IF NOT EXISTS idx_devices_model_type     ON devices (model_type);
 CREATE INDEX IF NOT EXISTS idx_devices_location       ON devices (location_site);
 CREATE INDEX IF NOT EXISTS idx_devices_placement_type ON devices (placement_type);
