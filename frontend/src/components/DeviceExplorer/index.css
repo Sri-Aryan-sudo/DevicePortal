@@ -284,12 +284,21 @@
   padding: var(--spacing-lg);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .device-id {
   color: var(--color-text-primary);
   font-weight: 600;
   font-size: var(--font-size-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+  display: block;
 }
 
 .device-type-badge {

@@ -422,7 +422,7 @@ class Dashboard extends Component {
                   className="team-color-dot" 
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="team-name">{item.team}</span>
+                <span className="team-name" title={item.team}>{item.team}</span>
               </div>
               <div className="team-bar-container">
                 <div 
@@ -452,7 +452,7 @@ class Dashboard extends Component {
           {placementTypeDistribution.map((item, index) => (
             <div key={index} className="vendor-item">
               <div className="vendor-header">
-                <span className="vendor-name">{item.placement_type}</span>
+                <span className="vendor-name" title={item.placement_type}>{item.placement_type}</span>
                 <span className="vendor-percentage">{item.percentage}%</span>
               </div>
               <div className="vendor-bar-track">

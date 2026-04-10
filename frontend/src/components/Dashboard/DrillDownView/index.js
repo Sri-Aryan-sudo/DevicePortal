@@ -369,7 +369,7 @@ class DrillDownView extends Component {
               <tbody>
                 {data.map((item, index) => (
                   <tr key={item.vendor} style={{ animationDelay: `${index * 10}ms` }}>
-                    <td>{item.vendor}</td>
+                    <td title={item.vendor}>{item.vendor}</td>
                     <td>{parseInt(item.count).toLocaleString()}</td>
                     <td>
                       <button
@@ -460,7 +460,7 @@ class DrillDownView extends Component {
               <tbody>
                 {data.map((item, index) => (
                   <tr key={item.model_type} style={{ animationDelay: `${index * 10}ms` }}>
-                    <td>{item.model_type}</td>
+                    <td title={item.model_type}>{item.model_type}</td>
                     <td>{parseInt(item.count).toLocaleString()}</td>
                     <td>
                       <button
@@ -551,7 +551,7 @@ class DrillDownView extends Component {
               <tbody>
                 {data.map((item, index) => (
                   <tr key={item.team_name} style={{ animationDelay: `${index * 10}ms` }}>
-                    <td>{item.team_name}</td>
+                    <td title={item.team_name}>{item.team_name}</td>
                     <td>{parseInt(item.count).toLocaleString()}</td>
                     <td>
                       <button
@@ -660,7 +660,7 @@ class DrillDownView extends Component {
               <tbody>
                 {data.map((item, index) => (
                   <tr key={item.placement_type} style={{ animationDelay: `${index * 10}ms` }}>
-                    <td>{item.placement_type}</td>
+                    <td title={item.placement_type}>{item.placement_type}</td>
                     <td>{parseInt(item.count).toLocaleString()}</td>
                     <td>
                       <button
@@ -714,16 +714,16 @@ class DrillDownView extends Component {
             <tbody>
               {devices.map((device, index) => (
                 <tr key={device.mac_address} style={{ animationDelay: `${index * 10}ms` }}>
-                  <td className="mono">{device.mac_address}</td>
-                  <td>{device.model_name || '-'}</td>
-                  <td>{device.model_type || '-'}</td>
+                  <td className="mono" title={device.mac_address}>{device.mac_address}</td>
+                  <td title={device.model_name || '-'}>{device.model_name || '-'}</td>
+                  <td title={device.model_type || '-'}>{device.model_type || '-'}</td>
                   <td>
                     <span className="device-type-badge">{device.device_type}</span>
                   </td>
-                  <td>{device.vendor || '-'}</td>
-                  <td>{device.team_name || '-'}</td>
-                  <td>{device.location_site || '-'}</td>
-                  <td>{device.primary_owner || 'Unassigned'}</td>
+                  <td title={device.vendor || '-'}>{device.vendor || '-'}</td>
+                  <td title={device.team_name || '-'}>{device.team_name || '-'}</td>
+                  <td title={device.location_site || '-'}>{device.location_site || '-'}</td>
+                  <td title={device.primary_owner || 'Unassigned'}>{device.primary_owner || 'Unassigned'}</td>
                   <td>
                     <button
                       className="btn-view-device"
