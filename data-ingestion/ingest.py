@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import psycopg2
-from psycopg2.extras import execute_batch
 import re
 
 # ==============================
@@ -130,13 +129,20 @@ def determine_device_type(row):
 
 def clean_dataframe(file_path):
 
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path, encoding_errors='replace')
 
     df = df.loc[:, ~df.columns.duplicated()]
 
     df.columns = df.columns.str.strip()
 
-    df = df.rename(columns=COLUMN_MAPPING)
+    # Case-insensitive column mapping
+    col_mapping_lower = {k.lower(): v for k, v in COLUMN_MAPPING.items()}
+    rename_map = {}
+    for col in df.columns:
+        mapped = col_mapping_lower.get(col.lower())
+        if mapped:
+            rename_map[col] = mapped
+    df = df.rename(columns=rename_map)
 
     df["device_type"] = df.apply(determine_device_type, axis=1)
 
@@ -163,6 +169,10 @@ def clean_dataframe(file_path):
 def insert_into_db(df):
 
     conn = psycopg2.connect(**DB_CONFIG)
+    inserted = 0
+    updated = 0
+    skipped = 0
+    errors = []
 
     try:
         cursor = conn.cursor()
@@ -175,12 +185,26 @@ def insert_into_db(df):
             INSERT INTO devices ({','.join(DB_COLUMNS)})
             VALUES ({','.join(['%s'] * len(DB_COLUMNS))})
             ON CONFLICT (mac_address) DO UPDATE SET {update_set}
-            WHERE {update_where};
+            WHERE {update_where}
+            RETURNING (xmax = 0) AS was_inserted;
         """
 
         data = [tuple(row) for row in df.values]
 
-        execute_batch(cursor, insert_query, data)
+        for i, row in enumerate(data):
+            try:
+                cursor.execute(insert_query, row)
+                result = cursor.fetchone()
+                if result is None:
+                    # ON CONFLICT matched but WHERE clause was false → no changes
+                    skipped += 1
+                elif result[0]:
+                    inserted += 1
+                else:
+                    updated += 1
+            except Exception as e:
+                mac = row[0] if row else "unknown"
+                errors.append({"row": i + 2, "mac": mac, "error": str(e)})
 
         conn.commit()
     except Exception:
@@ -188,6 +212,13 @@ def insert_into_db(df):
         raise
     finally:
         conn.close()
+
+    return {
+        "inserted": inserted,
+        "updated": updated,
+        "skipped": skipped,
+        "errors": errors
+    }
 
 
 # ==============================
@@ -198,8 +229,21 @@ def run_ingestion(file_path):
 
     df = clean_dataframe(file_path)
 
-    insert_into_db(df)
+    total_rows = len(df)
 
-    
+    # Count rows filtered out by MAC validation
+    raw_df = pd.read_csv(file_path)
+    raw_count = len(raw_df)
+    invalid_mac_count = raw_count - total_rows
 
-    return len(df)
+    db_result = insert_into_db(df)
+
+    return {
+        "total_rows": raw_count,
+        "valid_rows": total_rows,
+        "invalid_rows": invalid_mac_count,
+        "inserted": db_result["inserted"],
+        "updated": db_result["updated"],
+        "skipped": db_result["skipped"],
+        "errors": db_result["errors"]
+    }

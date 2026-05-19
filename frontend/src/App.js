@@ -29,7 +29,8 @@ class App extends Component {
       // App state
       currentView: 'dashboard',
       sidebarOpen: true,
-      selectedDevice: null
+      selectedDevice: null,
+      dataRefreshKey: 0
     };
     
     // If viewer mode, grant access without token
@@ -151,6 +152,13 @@ class App extends Component {
     });
   }
 
+  handleUploadSuccess = () => {
+    // Increment refresh key to force Dashboard/Explorer to re-fetch
+    this.setState(prevState => ({
+      dataRefreshKey: prevState.dataRefreshKey + 1
+    }));
+  }
+
   toggleSidebar = () => {
     this.setState(prevState => ({
       sidebarOpen: !prevState.sidebarOpen
@@ -158,13 +166,13 @@ class App extends Component {
   }
 
   renderCurrentView = () => {
-    const { currentView, selectedDevice, currentUser, authToken } = this.state;
+    const { currentView, selectedDevice, currentUser, authToken, dataRefreshKey } = this.state;
 
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard onDeviceSelect={this.handleDeviceSelect} />;
+        return <Dashboard key={`dashboard-${dataRefreshKey}`} onDeviceSelect={this.handleDeviceSelect} />;
       case 'explorer':
-        return <DeviceExplorer onDeviceSelect={this.handleDeviceSelect} />;
+        return <DeviceExplorer key={`explorer-${dataRefreshKey}`} onDeviceSelect={this.handleDeviceSelect} />;
       case 'device-detail':
         return (
           <DeviceDetail 
@@ -179,7 +187,7 @@ class App extends Component {
       case 'user-management':
         return <UserManagement />;
       case 'csv-ingestion':
-        return <CSVIngestion />;
+        return <CSVIngestion onUploadSuccess={this.handleUploadSuccess} />;
       default:
         return <Dashboard onDeviceSelect={this.handleDeviceSelect} />;
     }

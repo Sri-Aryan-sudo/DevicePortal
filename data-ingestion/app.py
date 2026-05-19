@@ -47,10 +47,29 @@ def ingest():
     file.save(file_path)
 
     try:
-        rows = run_ingestion(file_path)
-        return jsonify({"status": "success", "rows_inserted": rows})
-    except Exception:
-        return jsonify({"status": "error", "message": "Ingestion failed"}), 500
+        result = run_ingestion(file_path)
+        return jsonify({
+            "status": "success",
+            "success": True,
+            "message": "CSV processed successfully",
+            "totalRows": result["total_rows"],
+            "validRows": result["valid_rows"],
+            "invalidRows": result["invalid_rows"],
+            "inserted": result["inserted"],
+            "updated": result["updated"],
+            "skipped": result["skipped"],
+            "errors": len(result["errors"]),
+            "insertErrors": result["errors"][:10] if result["errors"] else []
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "success": False,
+            "message": str(e),
+            "detail": traceback.format_exc().split('\n')[-3:]
+        }), 500
     finally:
         # Always clean up uploaded file
         if os.path.exists(file_path):
