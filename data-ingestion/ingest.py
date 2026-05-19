@@ -129,7 +129,7 @@ def determine_device_type(row):
 
 def clean_dataframe(file_path):
 
-    df = pd.read_csv(file_path, encoding_errors='replace')
+    df = pd.read_csv(file_path, encoding='latin-1')
 
     df = df.loc[:, ~df.columns.duplicated()]
 
@@ -232,7 +232,7 @@ def run_ingestion(file_path):
     total_rows = len(df)
 
     # Count rows filtered out by MAC validation
-    raw_df = pd.read_csv(file_path)
+    raw_df = pd.read_csv(file_path, encoding='latin-1')
     raw_count = len(raw_df)
     invalid_mac_count = raw_count - total_rows
 
