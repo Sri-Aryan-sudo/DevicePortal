@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import './index.css';
 
 class DrillDownView extends Component {
@@ -396,13 +396,14 @@ class DrillDownView extends Component {
 
     const COLORS = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b', '#fa709a', '#00f2fe'];
 
-    const pieData = data.map((item, index) => ({
+    const barData = data.map((item, index) => ({
       name: item.model_type,
-      value: parseInt(item.count),
+      count: parseInt(item.count),
       fill: COLORS[index % COLORS.length]
     }));
 
     const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
+    const chartHeight = Math.max(400, data.length * 40);
 
     const title = type === 'total' || type === 'placement_types'
       ? `${selectedVendor} - Model Types`
@@ -414,33 +415,43 @@ class DrillDownView extends Component {
           <h1 className="drilldown-title gradient-text">{title}</h1>
           <p className="drilldown-subtitle">
             Showing {data.length} model type{data.length !== 1 ? 's' : ''} with {total} total devices.
-            Click a model type to see team breakdown.
+            Click a bar to see team breakdown.
           </p>
         </div>
 
         <div className="drilldown-chart-section">
           <div className="chart-wrapper">
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={130}
-                  fill="#8884d8"
-                  dataKey="value"
-                  onClick={(_, index) => onModelTypeClick(data[index])}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {pieData.map((entry, index) => (
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart
+                data={barData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+                onClick={(e) => {
+                  if (e && e.activePayload) {
+                    const index = barData.findIndex(d => d.name === e.activePayload[0].payload.name);
+                    if (index >= 0) onModelTypeClick(data[index]);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={140}
+                  tick={{ fontSize: 12 }}
+                />
+                <Tooltip
+                  formatter={(value) => [value.toLocaleString(), 'Devices']}
+                  cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }}
+                />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {barData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
