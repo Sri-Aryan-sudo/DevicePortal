@@ -9,17 +9,26 @@ data-ingestion/__pycache__/
 *.pyc
 
 # Uploads
-data-ingestion/uploads/
+data-ingestion/uploads/*
+backend/uploads/*
+!data-ingestion/uploads/.gitkeep
+!backend/uploads/.gitkeep
 
 # Environment variables
 .env
+backend/.env
+data-ingestion/.env
+frontend/.env
 
 # Build output
 frontend/build/
 
-# OS files
+# OS / IDE files
 Thumbs.db
 .DS_Store
+.vscode/
+.idea/
 
 # Logs
 *.log
+npm-debug.log*

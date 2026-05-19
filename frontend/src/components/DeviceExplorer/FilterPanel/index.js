@@ -14,6 +14,12 @@ const FilterPanel = memo(({
     team: filterOptions.teams
   };
 
+  const filterLabels = {
+    deviceType: 'Device Type',
+    vendor: 'Vendor',
+    team: 'Primary Team'
+  };
+
   return (
     <div className={`filter-panel ${isOpen ? 'open' : ''}`}>
       <div className="filter-header">
@@ -26,7 +32,7 @@ const FilterPanel = memo(({
       {Object.entries(filters).map(([category, options]) => (
         <div key={category} className="filter-section">
           <h4 className="filter-section-title">
-            {category.replace(/([A-Z])/g, ' $1').trim()}
+            {filterLabels[category] || category.replace(/([A-Z])/g, ' $1').trim()}
           </h4>
           <div className="filter-options">
             {options.map(option => (

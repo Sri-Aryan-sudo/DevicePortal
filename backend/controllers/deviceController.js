@@ -45,7 +45,7 @@ const getDevices = async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (mac_address ILIKE $${paramCount} OR model_name ILIKE $${paramCount} OR model_alias ILIKE $${paramCount} OR model_type ILIKE $${paramCount} OR vendor ILIKE $${paramCount} OR team_name ILIKE $${paramCount})`;
+      query += ` AND (mac_address ILIKE $${paramCount} OR model_name ILIKE $${paramCount} OR model_alias ILIKE $${paramCount} OR model_type ILIKE $${paramCount} OR vendor ILIKE $${paramCount} OR team_name ILIKE $${paramCount} OR current_team ILIKE $${paramCount})`;
       paramCount++;
     }
 
@@ -138,6 +138,7 @@ const createDevice = async (req, res) => {
       location_site,
       placement_type,
       team_name,
+      current_team,
       usage_purpose,
       primary_owner,
       current_user,
@@ -151,14 +152,14 @@ const createDevice = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO devices (
         mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
-        location_scope, location_site, placement_type, team_name, usage_purpose,
+        location_scope, location_site, placement_type, team_name, current_team, usage_purpose,
         primary_owner, "current_user", utilization_week_7, utilization_week_8, automation_filter,
         infra_tickets, device_repurpose
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *`,
       [
         mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
-        location_scope, location_site, placement_type, team_name, usage_purpose,
+        location_scope, location_site, placement_type, team_name, current_team, usage_purpose,
         primary_owner, current_user, utilization_week_7, utilization_week_8, automation_filter,
         infra_tickets, device_repurpose
       ]
@@ -180,7 +181,7 @@ const updateDevice = async (req, res) => {
 
     const allowedFields = [
       'model_name', 'model_alias', 'model_type', 'device_type', 'vendor', 'rack',
-      'location_scope', 'location_site', 'placement_type', 'team_name',
+      'location_scope', 'location_site', 'placement_type', 'current_team',
       'usage_purpose', 'current_user', 'utilization_week_7', 'utilization_week_8',
       'automation_filter', 'infra_tickets', 'device_repurpose'
     ];
@@ -231,7 +232,7 @@ const updateDevice = async (req, res) => {
 const updateDeviceByPOC = async (req, res) => {
   try {
     const { mac } = req.params;
-    const { current_user, team_name, usage_purpose, placement_type, location_site, device_repurpose } = req.body;
+    const { current_user, current_team, usage_purpose, placement_type, location_site, device_repurpose } = req.body;
 
     // Fetch current record for audit comparison
     const currentResult = await pool.query('SELECT * FROM devices WHERE mac_address = $1', [mac]);
@@ -252,10 +253,10 @@ const updateDeviceByPOC = async (req, res) => {
       fieldsToAudit.current_user = current_user;
       paramCount++;
     }
-    if (team_name !== undefined) {
-      updates.push(`team_name = $${paramCount}`);
-      values.push(team_name);
-      fieldsToAudit.team_name = team_name;
+    if (current_team !== undefined) {
+      updates.push(`current_team = $${paramCount}`);
+      values.push(current_team);
+      fieldsToAudit.current_team = current_team;
       paramCount++;
     }
     if (usage_purpose !== undefined) {
@@ -298,15 +299,13 @@ const updateDeviceByPOC = async (req, res) => {
     const updatedBy = req.user?.fullName || req.user?.ntid || 'POC';
     await logAuditChanges(mac, oldRecord, fieldsToAudit, updatedBy);
 
-    console.log(`Device ${mac} updated by ${req.user?.ntid || 'POC'} (${req.user?.role})`);
-
     res.json({
       success: true,
       message: 'Device updated successfully',
       device: result.rows[0]
     });
   } catch (error) {
-    console.error('POC update error:', error);
+    console.error('POC update error:', error.message);
     res.status(500).json({ error: 'Failed to update device' });
   }
 };

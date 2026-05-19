@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const config = require('../config/env');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
+const JWT_SECRET = config.JWT_SECRET;
 
 /**
  * Middleware to verify JWT token and attach user info to request
@@ -47,7 +48,7 @@ const authenticateToken = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired. Please login again.' });
     }
-    console.error('Authentication error:', error);
+    console.error('Authentication error:', error.message);
     return res.status(500).json({ error: 'Authentication failed' });
   }
 };
@@ -63,10 +64,7 @@ const verifyPOCorAdmin = (req, res, next) => {
   const { role } = req.user;
   
   if (role !== 'POC' && role !== 'ADMIN') {
-    return res.status(403).json({ 
-      error: 'Access denied. POC or ADMIN role required.',
-      userRole: role 
-    });
+    return res.status(403).json({ error: 'Access denied. POC or ADMIN role required.' });
   }
 
   next();
@@ -83,10 +81,7 @@ const verifyAdmin = (req, res, next) => {
   const { role } = req.user;
   
   if (role !== 'ADMIN') {
-    return res.status(403).json({ 
-      error: 'Access denied. ADMIN role required.',
-      userRole: role 
-    });
+    return res.status(403).json({ error: 'Access denied. ADMIN role required.' });
   }
 
   next();
@@ -125,7 +120,6 @@ const optionalAuth = async (req, res, next) => {
     }
   } catch (error) {
     // Invalid or expired token - continue without user info
-    console.log('Optional auth: Invalid/expired token');
   }
 
   next();

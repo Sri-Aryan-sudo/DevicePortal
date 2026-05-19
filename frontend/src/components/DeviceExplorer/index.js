@@ -151,6 +151,7 @@ class DeviceExplorer extends Component {
         (device.model_alias && device.model_alias.toLowerCase().includes(query)) ||
         (device.vendor && device.vendor.toLowerCase().includes(query)) ||
         (device.team_name && device.team_name.toLowerCase().includes(query)) ||
+        (device.current_team && device.current_team.toLowerCase().includes(query)) ||
         // Flexible model_type search: allows partial matches without underscores
         (normalizedModelType && normalizedModelType.includes(query))
       );

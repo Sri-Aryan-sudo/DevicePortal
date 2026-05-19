@@ -67,7 +67,8 @@ class App extends Component {
 
   verifyToken = async (token) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify', {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBase}/auth/verify`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

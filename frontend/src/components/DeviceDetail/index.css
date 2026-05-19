@@ -105,6 +105,8 @@
 .hero-model {
   font-size: var(--font-size-xl);
   color: var(--color-text-secondary);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .hero-model-type {
@@ -112,6 +114,8 @@
   color: var(--color-text-tertiary);
   font-style: italic;
   margin-top: var(--spacing-xs);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .status-badge-large {
@@ -220,6 +224,8 @@
   background: var(--color-glass-light);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--color-primary);
+  gap: var(--spacing-md);
+  min-width: 0;
 }
 
 .detail-label {
@@ -233,6 +239,9 @@
   color: var(--color-text-primary);
   font-weight: 600;
   text-align: right;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 /* ============================================

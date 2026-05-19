@@ -45,7 +45,7 @@ class DeviceDetail extends Component {
       const auditLogs = auditRes.data || [];
 
       // Derive timeline from key field changes
-      const timelineFields = ['team_name', 'primary_owner', 'current_user', 'location_site', 'placement_type'];
+      const timelineFields = ['team_name', 'current_team', 'primary_owner', 'current_user', 'location_site', 'placement_type'];
       const timeline = auditLogs
         .filter(log => timelineFields.includes(log.field_name))
         .map(log => ({
@@ -111,7 +111,7 @@ class DeviceDetail extends Component {
       isEditMode: true,
       editedFields: {
         current_user: device.current_user || '',
-        team_name: device.team_name || '',
+        current_team: device.current_team || '',
         usage_purpose: device.usage_purpose || '',
         placement_type: device.placement_type || '',
         location_site: device.location_site || '',
@@ -246,7 +246,12 @@ class DeviceDetail extends Component {
           </div>
           {/* Editable Fields */}
           {this.renderEditableField('Current User', 'current_user', device.current_user || 'Unassigned')}
-          {this.renderEditableField('Team', 'team_name', device.team_name)}
+          {/* Primary Team - always read-only */}
+          <div className="detail-row">
+            <span className="detail-label">Primary Team</span>
+            <span className="detail-value">{device.team_name || '-'}</span>
+          </div>
+          {this.renderEditableField('Current Team', 'current_team', device.current_team)}
           {this.renderEditableField('Location', 'location_site', device.location_site)}
           {this.renderEditableField('Placement Type', 'placement_type', device.placement_type)}
           {this.renderEditableField('Usage Purpose', 'usage_purpose', device.usage_purpose)}
@@ -372,8 +377,12 @@ class DeviceDetail extends Component {
           <span className="current-location-value">{device?.location_site || 'Unknown'}</span>
         </div>
         <div className="current-location-badge" style={{ marginTop: '8px' }}>
-          <span className="current-location-label">Team</span>
+          <span className="current-location-label">Primary Team</span>
           <span className="current-location-value">{device?.team_name || 'Unassigned'}</span>
+        </div>
+        <div className="current-location-badge" style={{ marginTop: '8px' }}>
+          <span className="current-location-label">Current Team</span>
+          <span className="current-location-value">{device?.current_team || 'Unassigned'}</span>
         </div>
         {locationHistory.length === 0 ? (
           <p className="empty-state-text">No location changes recorded yet.</p>

@@ -55,7 +55,8 @@ class CSVIngestion extends Component {
     formData.append('file', selectedFile);
     
     try {
-      const response = await fetch('http://localhost:5001/ingest', {
+      const ingestionUrl = process.env.REACT_APP_INGESTION_URL || 'http://localhost:5001/ingest';
+      const response = await fetch(ingestionUrl, {
         method: 'POST',
         body: formData
       });
@@ -274,7 +275,7 @@ class CSVIngestion extends Component {
             <li>Review the upload results and any errors</li>
           </ol>
           <p className="note">
-            <strong>Note:</strong> The ingestion service must be running on port 5001
+            <strong>Note:</strong> The ingestion service must be running for uploads to work.
           </p>
         </div>
       </div>
