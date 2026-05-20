@@ -32,6 +32,7 @@ COLUMN_MAPPING = {
     "Team Name": "team_name",
     "Used for": "usage_purpose",
     "Device Owner (Primary)": "primary_owner",
+    "Current User": "current_user",
     "Utilisation % Week 7 (Feb 9 to Feb 15)": "utilization_week_7",
     "Utilisation % Week 8 (Feb 16 to Feb 22)": "utilization_week_8",
     "Automatics Filter name": "automation_filter",
@@ -43,7 +44,7 @@ DB_COLUMNS = [
     "mac_address","model_name","model_alias","model_type","device_type",
     "cats_type","vendor","rack","location_scope","location_site",
     "placement_type","team_name","usage_purpose","primary_owner",
-    "utilization_week_7","utilization_week_8","automation_filter",
+    "current_user","utilization_week_7","utilization_week_8","automation_filter",
     "infra_tickets","device_repurpose"
 ]
 
@@ -159,6 +160,9 @@ def clean_dataframe(file_path):
 
     df["vendor"] = df["model_type"].apply(extract_vendor)
 
+    # Default current_user to primary_owner if not provided
+    df["current_user"] = df["current_user"].fillna(df["primary_owner"])
+
     return df
 
 
@@ -177,12 +181,16 @@ def insert_into_db(df):
     try:
         cursor = conn.cursor()
 
-        update_cols = [c for c in DB_COLUMNS if c != 'mac_address']
-        update_set = ', '.join([f"{c} = EXCLUDED.{c}" for c in update_cols])
-        update_where = ' OR '.join([f"devices.{c} IS DISTINCT FROM EXCLUDED.{c}" for c in update_cols])
+        def quote_col(c):
+            return f'"{c}"' if c == 'current_user' else c
 
+        update_cols = [c for c in DB_COLUMNS if c != 'mac_address']
+        update_set = ', '.join([f"{quote_col(c)} = EXCLUDED.{quote_col(c)}" for c in update_cols])
+        update_where = ' OR '.join([f"devices.{quote_col(c)} IS DISTINCT FROM EXCLUDED.{quote_col(c)}" for c in update_cols])
+
+        col_names = ', '.join([quote_col(c) for c in DB_COLUMNS])
         insert_query = f"""
-            INSERT INTO devices ({','.join(DB_COLUMNS)})
+            INSERT INTO devices ({col_names})
             VALUES ({','.join(['%s'] * len(DB_COLUMNS))})
             ON CONFLICT (mac_address) DO UPDATE SET {update_set}
             WHERE {update_where}

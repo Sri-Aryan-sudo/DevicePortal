@@ -121,6 +121,8 @@ const COLUMN_MAPPING = {
   'infra_tickets': 'infra_tickets',
   'device repurpose': 'device_repurpose',
   'device_repurpose': 'device_repurpose',
+  'current user': 'current_user',
+  'current_user': 'current_user',
 };
 
 // Map a raw CSV row to DB column names
@@ -216,7 +218,8 @@ const normalizeDevice = (device) => {
     utilization_week_8: device.utilization_week_8 ? parseFloat(device.utilization_week_8) : null,
     automation_filter: device.automation_filter?.trim() || null,
     infra_tickets: device.infra_tickets ? parseInt(device.infra_tickets) : null,
-    device_repurpose: device.device_repurpose?.trim() || null
+    device_repurpose: device.device_repurpose?.trim() || null,
+    current_user: device.current_user?.trim() || null
   };
 
   // Auto-derive vendor from model_type if not provided
@@ -226,6 +229,11 @@ const normalizeDevice = (device) => {
 
   // Always derive device_type from model fields (ignore CSV value)
   normalized.device_type = determineDeviceType(normalized);
+
+  // Default current_user to primary_owner if not provided
+  if (!normalized.current_user && normalized.primary_owner) {
+    normalized.current_user = normalized.primary_owner;
+  }
 
   return normalized;
 };
@@ -339,9 +347,9 @@ const uploadCSV = async (req, res) => {
           INSERT INTO devices (
             mac_address, model_name, model_alias, model_type, device_type, cats_type, vendor, rack,
             location_scope, location_site, placement_type, team_name, usage_purpose,
-            primary_owner, utilization_week_7, utilization_week_8, automation_filter,
+            primary_owner, "current_user", utilization_week_7, utilization_week_8, automation_filter,
             infra_tickets, device_repurpose
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
           ON CONFLICT (mac_address) 
           DO UPDATE SET
             model_name = EXCLUDED.model_name,
@@ -357,6 +365,7 @@ const uploadCSV = async (req, res) => {
             team_name = EXCLUDED.team_name,
             usage_purpose = EXCLUDED.usage_purpose,
             primary_owner = EXCLUDED.primary_owner,
+            "current_user" = EXCLUDED."current_user",
             utilization_week_7 = EXCLUDED.utilization_week_7,
             utilization_week_8 = EXCLUDED.utilization_week_8,
             automation_filter = EXCLUDED.automation_filter,
@@ -370,7 +379,7 @@ const uploadCSV = async (req, res) => {
           device.mac_address, device.model_name, device.model_alias, device.model_type,
           device.device_type, device.cats_type, device.vendor, device.rack, device.location_scope,
           device.location_site, device.placement_type, device.team_name, device.usage_purpose,
-          device.primary_owner, device.utilization_week_7, device.utilization_week_8,
+          device.primary_owner, device.current_user, device.utilization_week_7, device.utilization_week_8,
           device.automation_filter, device.infra_tickets, device.device_repurpose
         ]);
 
