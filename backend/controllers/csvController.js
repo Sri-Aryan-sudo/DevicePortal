@@ -177,10 +177,7 @@ const validateDevice = (device) => {
     }
   }
   
-  // Validate device_type enum if provided
-  if (device.device_type && !['PANEL', 'BOARD', 'STB'].includes(device.device_type.toUpperCase())) {
-    errors.push(`device_type must be PANEL, BOARD, or STB (got: ${device.device_type})`);
-  }
+  // device_type is always auto-derived from model fields, no need to validate from CSV
   
   return {
     valid: errors.length === 0,
@@ -227,10 +224,8 @@ const normalizeDevice = (device) => {
     normalized.vendor = extractVendor(normalized.model_type);
   }
 
-  // Auto-derive device_type from model fields if not provided
-  if (!normalized.device_type) {
-    normalized.device_type = determineDeviceType(normalized);
-  }
+  // Always derive device_type from model fields (ignore CSV value)
+  normalized.device_type = determineDeviceType(normalized);
 
   return normalized;
 };
