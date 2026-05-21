@@ -574,11 +574,8 @@ class Dashboard extends Component {
             <p className="dashboard-subtitle">Real-time device inventory analytics</p>
           </div>
           <div className="header-actions">
-            <button className="btn btn-secondary">
+            <button className="btn btn-secondary" onClick={() => this.componentDidMount()}>
               <span>↻</span> Refresh
-            </button>
-            <button className="btn btn-primary">
-              <span>⤓</span> Export Report
             </button>
           </div>
         </div>

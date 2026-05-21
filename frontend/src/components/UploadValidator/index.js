@@ -178,7 +178,10 @@ class UploadValidator extends Component {
           uploadResults: data
         });
       } else {
-        throw new Error(data.error || 'Upload failed');
+        let errorMsg = data.error || 'Upload failed';
+        if (data.details) errorMsg += ' ' + data.details;
+        if (data.hint) errorMsg += ' ' + data.hint;
+        throw new Error(errorMsg);
       }
 
     } catch (error) {

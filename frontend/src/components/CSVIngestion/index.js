@@ -20,9 +20,18 @@ class CSVIngestion extends Component {
     
     if (file) {
       // Validate file type
-      if (!file.name.endsWith('.csv')) {
+      if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
         this.setState({
-          uploadError: 'Please select a CSV file',
+          uploadError: 'Please select a CSV or XLSX file',
+          selectedFile: null
+        });
+        return;
+      }
+      
+      // Validate file size (50MB limit)
+      if (file.size > 50 * 1024 * 1024) {
+        this.setState({
+          uploadError: 'File exceeds 50 MB limit',
           selectedFile: null
         });
         return;
@@ -48,22 +57,38 @@ class CSVIngestion extends Component {
     this.setState({ 
       uploading: true, 
       uploadError: null,
-      uploadSuccess: false 
+      uploadSuccess: false,
+      uploadResult: null
     });
     
     const formData = new FormData();
     formData.append('file', selectedFile);
     
     try {
-      const ingestionUrl = process.env.REACT_APP_INGESTION_URL || 'http://localhost:5001/ingest';
-      const response = await fetch(ingestionUrl, {
+      // Get auth token
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      if (!token) {
+        this.setState({
+          uploading: false,
+          uploadError: 'Not authenticated. Please log in again.',
+          uploadSuccess: false
+        });
+        return;
+      }
+
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBase}/upload-csv`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       });
       
       const result = await response.json();
       
-      if (response.ok) {
+      if (response.ok && result.success) {
         this.setState({
           uploading: false,
           uploadSuccess: true,
@@ -77,15 +102,18 @@ class CSVIngestion extends Component {
           this.fileInputRef.current.value = '';
         }
         
-        // Auto-hide success message after 5 seconds
-        setTimeout(() => {
-          this.setState({ uploadSuccess: false });
-        }, 5000);
+        // Notify parent to refresh data
+        if (this.props.onUploadSuccess) {
+          this.props.onUploadSuccess();
+        }
         
       } else {
+        let errorMsg = result.error || result.message || 'Upload failed';
+        if (result.details) errorMsg += '\n' + result.details;
+        if (result.hint) errorMsg += '\n' + result.hint;
         this.setState({
           uploading: false,
-          uploadError: result.error || 'Upload failed',
+          uploadError: errorMsg,
           uploadSuccess: false
         });
       }
@@ -93,7 +121,7 @@ class CSVIngestion extends Component {
     } catch (error) {
       this.setState({
         uploading: false,
-        uploadError: error.message || 'Failed to connect to ingestion server',
+        uploadError: error.message || 'Failed to connect to server. Please check that the backend is running.',
         uploadSuccess: false
       });
     }
@@ -120,6 +148,134 @@ class CSVIngestion extends Component {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 
+  renderColumnWarning() {
+    const { uploadResult } = this.state;
+    if (!uploadResult || !uploadResult.columnInfo) return null;
+
+    const { recognized, unrecognized } = uploadResult.columnInfo;
+    if (!unrecognized || unrecognized.length === 0) return null;
+
+    return (
+      <div className="alert alert-warning" style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+        <div className="alert-content">
+          <strong>⚠️ Unrecognized Columns Ignored</strong>
+          <p style={{ margin: '8px 0 4px' }}>
+            The following column headers were not recognized and their data was skipped:
+          </p>
+          <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+            {unrecognized.map((col, i) => (
+              <li key={i} style={{ color: '#856404' }}>{col}</li>
+            ))}
+          </ul>
+          <p style={{ margin: '8px 0 0', fontSize: '0.85em', color: '#856404' }}>
+            Recognized columns ({recognized.length}): {recognized.join(', ')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  renderUploadSummary() {
+    const { uploadResult } = this.state;
+    if (!uploadResult) return null;
+
+    const {
+      totalRows = 0,
+      validRows = 0,
+      invalidRows = 0,
+      inserted = 0,
+      updated = 0,
+      errors = 0
+    } = uploadResult;
+
+    const skipped = validRows - inserted - updated - errors;
+
+    return (
+      <div className="upload-summary glass-panel">
+        <h3>📊 Upload Summary</h3>
+        <div className="summary-grid">
+          <div className="summary-item">
+            <span className="summary-label">Total Rows</span>
+            <span className="summary-value">{totalRows}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Valid Rows</span>
+            <span className="summary-value summary-valid">{validRows}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Invalid Rows</span>
+            <span className="summary-value summary-invalid">{invalidRows}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Inserted</span>
+            <span className="summary-value summary-inserted">{inserted}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Updated</span>
+            <span className="summary-value summary-updated">{updated}</span>
+          </div>
+          {skipped > 0 && (
+            <div className="summary-item">
+              <span className="summary-label">Skipped (no changes)</span>
+              <span className="summary-value summary-skipped">{skipped}</span>
+            </div>
+          )}
+          {errors > 0 && (
+            <div className="summary-item">
+              <span className="summary-label">Errors</span>
+              <span className="summary-value summary-errors">{errors}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  renderErrors() {
+    const { uploadResult } = this.state;
+    if (!uploadResult) return null;
+
+    const { invalidDevices, insertErrors } = uploadResult;
+    const hasInvalid = invalidDevices && invalidDevices.length > 0;
+    const hasInsertErrors = insertErrors && insertErrors.length > 0;
+
+    if (!hasInvalid && !hasInsertErrors) return null;
+
+    return (
+      <div className="errors-panel glass-panel">
+        {hasInvalid && (
+          <>
+            <h3>⚠️ Validation Errors</h3>
+            <div className="errors-list">
+              {invalidDevices.map((item, index) => (
+                <div key={`invalid-${index}`} className="error-item">
+                  <strong>Row {item.row}:</strong>{' '}
+                  {item.validation
+                    ? item.validation.errors.join(', ')
+                    : item.errors
+                    ? item.errors.join(', ')
+                    : 'Invalid data'}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {hasInsertErrors && (
+          <>
+            <h3>❌ Database Errors</h3>
+            <div className="errors-list">
+              {insertErrors.map((item, index) => (
+                <div key={`insert-${index}`} className="error-item">
+                  <strong>Row {item.row} (MAC: {item.mac}):</strong> {item.error}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
   render() {
     const { 
       selectedFile, 
@@ -144,19 +300,19 @@ class CSVIngestion extends Component {
             <div className="alert-content">
               <strong>Upload Successful!</strong>
               <div className="upload-stats">
-                {uploadResult.inserted && (
+                {uploadResult.inserted > 0 && (
                   <span className="stat">
                     <strong>{uploadResult.inserted}</strong> devices added
                   </span>
                 )}
-                {uploadResult.updated && (
+                {uploadResult.updated > 0 && (
                   <span className="stat">
                     <strong>{uploadResult.updated}</strong> devices updated
                   </span>
                 )}
-                {uploadResult.errors && uploadResult.errors.length > 0 && (
+                {uploadResult.errors > 0 && (
                   <span className="stat error">
-                    <strong>{uploadResult.errors.length}</strong> errors
+                    <strong>{uploadResult.errors}</strong> errors
                   </span>
                 )}
               </div>
@@ -169,10 +325,14 @@ class CSVIngestion extends Component {
             <div className="alert-icon">⚠️</div>
             <div className="alert-content">
               <strong>Upload Failed</strong>
-              <p>{uploadError}</p>
+              {uploadError.split('\n').map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
             </div>
           </div>
         )}
+
+        {this.renderColumnWarning()}
 
         <div className="upload-panel glass-panel">
           <div className="upload-instructions">
@@ -181,9 +341,10 @@ class CSVIngestion extends Component {
             <div className="requirements">
               <h4>Requirements:</h4>
               <ul>
-                <li>File must be in CSV format (.csv)</li>
-                <li>Must contain valid device data columns</li>
-                <li>Maximum file size: 10MB</li>
+                <li>File must be in CSV or XLSX format</li>
+                <li>Must contain: mac_address, model_name, model_type, device_type, vendor, team_name</li>
+                <li>MAC address format: XX:XX:XX:XX:XX:XX</li>
+                <li>Maximum file size: 50MB</li>
               </ul>
             </div>
           </div>
@@ -193,7 +354,7 @@ class CSVIngestion extends Component {
               <input
                 ref={this.fileInputRef}
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx"
                 onChange={this.handleFileSelect}
                 className="file-input"
                 id="csv-file-input"
@@ -248,23 +409,8 @@ class CSVIngestion extends Component {
           </div>
         </div>
 
-        {uploadResult && uploadResult.errors && uploadResult.errors.length > 0 && (
-          <div className="errors-panel glass-panel">
-            <h3>⚠️ Upload Errors ({uploadResult.errors.length})</h3>
-            <div className="errors-list">
-              {uploadResult.errors.slice(0, 10).map((error, index) => (
-                <div key={index} className="error-item">
-                  <strong>Row {error.row || index + 1}:</strong> {error.message}
-                </div>
-              ))}
-              {uploadResult.errors.length > 10 && (
-                <div className="error-item">
-                  ... and {uploadResult.errors.length - 10} more errors
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {this.renderUploadSummary()}
+        {this.renderErrors()}
 
         <div className="help-panel glass-panel">
           <h3>ℹ️ How to Use</h3>
@@ -275,7 +421,7 @@ class CSVIngestion extends Component {
             <li>Review the upload results and any errors</li>
           </ol>
           <p className="note">
-            <strong>Note:</strong> The ingestion service must be running for uploads to work.
+            <strong>Note:</strong> Uploaded data will appear in Dashboard and Device Explorer immediately.
           </p>
         </div>
       </div>

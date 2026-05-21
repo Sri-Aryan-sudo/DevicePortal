@@ -225,13 +225,14 @@
 
 .devices-table-container {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
   animation: fadeIn 0.8s ease-out;
 }
 
 .devices-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .devices-table thead {
@@ -284,7 +285,6 @@
   padding: var(--spacing-lg);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -297,7 +297,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 200px;
   display: block;
 }
 
@@ -331,6 +330,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-base);
+  white-space: nowrap;
 }
 
 .action-btn:hover {
