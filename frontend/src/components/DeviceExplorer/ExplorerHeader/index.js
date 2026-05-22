@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 
-const ExplorerHeader = memo(({ totalRecords, onToggleFilter, onExport }) => {
+const ExplorerHeader = memo(({ totalRecords, onToggleFilter }) => {
   return (
     <div className="explorer-header">
       <div>
@@ -10,9 +10,6 @@ const ExplorerHeader = memo(({ totalRecords, onToggleFilter, onExport }) => {
       <div className="header-actions">
         <button className="btn btn-secondary" onClick={onToggleFilter}>
           <span>⚙</span> Filters
-        </button>
-        <button className="btn btn-primary" onClick={onExport}>
-          <span>⤓</span> Export
         </button>
       </div>
     </div>

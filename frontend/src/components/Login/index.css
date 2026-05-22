@@ -4,22 +4,27 @@
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
   background: var(--color-bg-primary);
   overflow-y: auto;
   overflow-x: hidden;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
+  padding: 2rem;
 }
 
 /* Animated background gradients */
 .login-background {
-  position: absolute;
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
   z-index: 0;
+  pointer-events: none;
 }
 
 .login-gradient-1,
@@ -78,9 +83,15 @@
   z-index: 1;
   width: 100%;
   max-width: 450px;
-  padding: 3rem;
-  margin: 2rem;
+  padding: 2rem 3rem;
+  margin: auto;
   animation: slideUp 0.6s ease-out;
+  flex: none;
+}
+
+.login-card:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 @keyframes slideUp {
@@ -355,8 +366,8 @@
 /* Responsive */
 @media (max-width: 768px) {
   .login-card {
-    max-width: 90%;
-    padding: 2rem;
+    max-width: 95%;
+    padding: 1.5rem;
   }
 
   .login-title {
@@ -403,4 +414,62 @@
 .remember-me-checkbox:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Divider */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.divider-text {
+  color: var(--color-text-tertiary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Continue as Viewer button */
+.viewer-button {
+  width: 100%;
+  padding: 0.875rem 2rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.viewer-button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.05);
+  transform: translateY(-1px);
+}
+
+.viewer-button:active {
+  transform: translateY(0);
+}
+
+.viewer-icon {
+  font-size: 1.2rem;
 }

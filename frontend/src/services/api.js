@@ -34,6 +34,7 @@ export const authAPI = {
 export const deviceAPI = {
   getDevices: (params) => api.get('/devices', { params }),
   getDeviceByMac: (mac) => api.get(`/devices/${mac}`),
+  getAuditLog: (mac) => api.get(`/devices/${mac}/audit-log`),
   createDevice: (data) => api.post('/devices', data),
   updateDevice: (mac, data) => api.put(`/devices/${mac}`, data),
   updateDeviceByPOC: (mac, data, token) => api.put(`/devices/${mac}/poc-edit`, data, {
@@ -45,11 +46,6 @@ export const deviceAPI = {
   getStatistics: () => api.get('/statistics'),
   getFilterOptions: () => api.get('/filter-options'),
   getAllDevices: (params) => api.get('/devices', { params: { ...params, limit: 100000, page: 1 } }),
-};
-
-// Data Quality API
-export const dataQualityAPI = {
-  getQualityMetrics: () => api.get('/data-quality'),
 };
 
 // Drill-Down API
@@ -73,6 +69,10 @@ export const drillDownAPI = {
   getModelTypesByVendorAndType: (deviceType, vendor) => api.get(`/drilldown/${deviceType}/vendors/${encodeURIComponent(vendor)}/models`),
   getTeamsByVendorAndModel: (vendor, modelType) => api.get(`/drilldown/vendors/${encodeURIComponent(vendor)}/models/${encodeURIComponent(modelType)}/teams`),
   getTeamsByTypeVendorAndModel: (deviceType, vendor, modelType) => api.get(`/drilldown/${deviceType}/vendors/${encodeURIComponent(vendor)}/models/${encodeURIComponent(modelType)}/teams`),
+
+  // Placement type drill-down APIs
+  getAllPlacementTypesBreakdown: () => api.get('/drilldown/placement-types/all'),
+  getVendorsByPlacementType: (placementType) => api.get(`/drilldown/placement-types/${encodeURIComponent(placementType)}/vendors`),
 };
 
 export default api;

@@ -55,6 +55,10 @@
   border-radius: var(--radius-sm);
   transition: all var(--transition-base);
   font-weight: 500;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .breadcrumb-item:hover {
@@ -95,6 +99,8 @@
   font-size: var(--font-size-4xl);
   font-weight: 700;
   margin-bottom: var(--spacing-md);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .drilldown-subtitle {
@@ -437,6 +443,9 @@
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0 0 var(--spacing-sm) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-count {
@@ -530,12 +539,20 @@
   padding: var(--spacing-md);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .drilldown-table td.mono {
   font-family: var(--font-mono);
   color: var(--color-text-primary);
   font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .device-type-badge {
@@ -634,12 +651,20 @@
   padding: var(--spacing-md);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .drilldown-table td.mono {
   font-family: var(--font-mono);
   color: var(--color-text-primary);
   font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ============================================

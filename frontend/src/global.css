@@ -20,7 +20,7 @@
   --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  --gradient-info: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  --gradient-info: linear-gradient(135deg, #0099f7 0%, #f11712 100%);
   --gradient-warning: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
   --gradient-danger: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   
@@ -105,10 +105,10 @@
 html, body, #root {
   width: 100%;
   height: 100%;
-  overflow: hidden;
 }
 
 body {
+  overflow: hidden;
   font-family: var(--font-primary);
   font-size: var(--font-size-base);
   line-height: 1.6;

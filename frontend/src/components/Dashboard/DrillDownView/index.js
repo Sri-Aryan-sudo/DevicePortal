@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import './index.css';
 
 class DrillDownView extends Component {
@@ -123,6 +123,71 @@ class DrillDownView extends Component {
       );
     }
 
+    // Placement Types drill-down: Placement Types → Vendors → Models → Teams → Devices
+    if (type === 'placement_types') {
+      return (
+        <div className="breadcrumb">
+          <button className="breadcrumb-item" onClick={() => onNavigate('dashboard')}>
+            Dashboard
+          </button>
+          <span className="breadcrumb-separator">/</span>
+
+          {level === 'placement_type' && (
+            <span className="breadcrumb-item active">Placement Types</span>
+          )}
+
+          {(level === 'vendor' || level === 'model_type' || level === 'team' || level === 'devices') && (
+            <>
+              <button className="breadcrumb-item" onClick={() => onNavigate('placement_type')}>
+                Placement Types
+              </button>
+              <span className="breadcrumb-separator">/</span>
+            </>
+          )}
+
+          {level === 'vendor' && (
+            <span className="breadcrumb-item active">{this.props.selectedPlacementType} - Vendors</span>
+          )}
+
+          {(level === 'model_type' || level === 'team' || level === 'devices') && selectedVendor && (
+            <>
+              <button className="breadcrumb-item" onClick={() => onNavigate('vendor')}>
+                {this.props.selectedPlacementType} - Vendors
+              </button>
+              <span className="breadcrumb-separator">/</span>
+            </>
+          )}
+
+          {level === 'model_type' && selectedVendor && (
+            <span className="breadcrumb-item active">{selectedVendor} - Models</span>
+          )}
+
+          {(level === 'team' || level === 'devices') && selectedVendor && selectedModelType && (
+            <>
+              <button className="breadcrumb-item" onClick={() => onNavigate('model_type')}>
+                {selectedVendor} - Models
+              </button>
+              <span className="breadcrumb-separator">/</span>
+            </>
+          )}
+
+          {level === 'team' && selectedModelType && (
+            <span className="breadcrumb-item active">{selectedModelType} - Teams</span>
+          )}
+
+          {level === 'devices' && (
+            <>
+              <button className="breadcrumb-item" onClick={() => onNavigate('team')}>
+                {selectedModelType} - Teams
+              </button>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-item active">{selectedTeam} - Devices</span>
+            </>
+          )}
+        </div>
+      );
+    }
+
     return null;
   }
 
@@ -131,13 +196,14 @@ class DrillDownView extends Component {
 
     const COLORS = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b', '#fa709a', '#00f2fe'];
 
-    const pieData = data.map((item, index) => ({
+    const barData = data.map((item, index) => ({
       name: item.device_type,
-      value: parseInt(item.count),
+      count: parseInt(item.count),
       fill: COLORS[index % COLORS.length]
     }));
 
     const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
+    const chartHeight = Math.max(300, data.length * 50);
 
     return (
       <div className="drilldown-content">
@@ -150,27 +216,29 @@ class DrillDownView extends Component {
 
         <div className="drilldown-chart-section">
           <div className="chart-wrapper">
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={130}
-                  fill="#8884d8"
-                  dataKey="value"
-                  onClick={(_, index) => onDeviceTypeClick(data[index])}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {pieData.map((entry, index) => (
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart
+                data={barData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                onClick={(e) => {
+                  if (e && e.activePayload) {
+                    const index = barData.findIndex(d => d.name === e.activePayload[0].payload.name);
+                    if (index >= 0) onDeviceTypeClick(data[index]);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value) => [value.toLocaleString(), 'Devices']} cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {barData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -185,13 +253,14 @@ class DrillDownView extends Component {
 
     const COLORS = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b', '#fa709a', '#00f2fe'];
 
-    const pieData = data.map((item, index) => ({
+    const barData = data.map((item, index) => ({
       name: item.vendor,
-      value: parseInt(item.count),
+      count: parseInt(item.count),
       fill: COLORS[index % COLORS.length]
     }));
 
     const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
+    const chartHeight = Math.max(300, data.length * 40);
 
     return (
       <div className="drilldown-content">
@@ -204,25 +273,22 @@ class DrillDownView extends Component {
 
         <div className="drilldown-chart-section">
           <div className="chart-wrapper">
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={130}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart
+                data={barData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value) => [value.toLocaleString(), 'Devices']} cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {barData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -238,16 +304,19 @@ class DrillDownView extends Component {
 
     const COLORS = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b', '#fa709a', '#00f2fe'];
 
-    const pieData = data.map((item, index) => ({
+    const barData = data.map((item, index) => ({
       name: item.vendor,
-      value: parseInt(item.count),
+      count: parseInt(item.count),
       fill: COLORS[index % COLORS.length]
     }));
 
     const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
+    const chartHeight = Math.max(300, data.length * 40);
 
     const title = type === 'total'
       ? 'Total Devices - Vendor Distribution'
+      : type === 'placement_types'
+      ? `${this.props.selectedPlacementType} - Vendor Distribution`
       : `${selectedDeviceType} - Vendor Distribution`;
 
     return (
@@ -256,33 +325,35 @@ class DrillDownView extends Component {
           <h1 className="drilldown-title gradient-text">{title}</h1>
           <p className="drilldown-subtitle">
             Showing {data.length} vendor{data.length !== 1 ? 's' : ''} with {total} total devices.
-            Click a vendor to explore model types.
+            Click a bar to explore model types.
           </p>
         </div>
 
         <div className="drilldown-chart-section">
           <div className="chart-wrapper">
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={130}
-                  fill="#8884d8"
-                  dataKey="value"
-                  onClick={(_, index) => onVendorClick(data[index])}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {pieData.map((entry, index) => (
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart
+                data={barData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                onClick={(e) => {
+                  if (e && e.activePayload) {
+                    const index = barData.findIndex(d => d.name === e.activePayload[0].payload.name);
+                    if (index >= 0) onVendorClick(data[index]);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value) => [value.toLocaleString(), 'Devices']} cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {barData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -302,7 +373,7 @@ class DrillDownView extends Component {
               <tbody>
                 {data.map((item, index) => (
                   <tr key={item.vendor} style={{ animationDelay: `${index * 10}ms` }}>
-                    <td>{item.vendor}</td>
+                    <td title={item.vendor}>{item.vendor}</td>
                     <td>{parseInt(item.count).toLocaleString()}</td>
                     <td>
                       <button
@@ -329,15 +400,16 @@ class DrillDownView extends Component {
 
     const COLORS = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b', '#fa709a', '#00f2fe'];
 
-    const pieData = data.map((item, index) => ({
+    const barData = data.map((item, index) => ({
       name: item.model_type,
-      value: parseInt(item.count),
+      count: parseInt(item.count),
       fill: COLORS[index % COLORS.length]
     }));
 
     const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
+    const chartHeight = Math.max(400, data.length * 40);
 
-    const title = type === 'total'
+    const title = type === 'total' || type === 'placement_types'
       ? `${selectedVendor} - Model Types`
       : `${selectedDeviceType} / ${selectedVendor} - Model Types`;
 
@@ -347,33 +419,43 @@ class DrillDownView extends Component {
           <h1 className="drilldown-title gradient-text">{title}</h1>
           <p className="drilldown-subtitle">
             Showing {data.length} model type{data.length !== 1 ? 's' : ''} with {total} total devices.
-            Click a model type to see team breakdown.
+            Click a bar to see team breakdown.
           </p>
         </div>
 
         <div className="drilldown-chart-section">
           <div className="chart-wrapper">
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={130}
-                  fill="#8884d8"
-                  dataKey="value"
-                  onClick={(_, index) => onModelTypeClick(data[index])}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {pieData.map((entry, index) => (
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart
+                data={barData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+                onClick={(e) => {
+                  if (e && e.activePayload) {
+                    const index = barData.findIndex(d => d.name === e.activePayload[0].payload.name);
+                    if (index >= 0) onModelTypeClick(data[index]);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={140}
+                  tick={{ fontSize: 12 }}
+                />
+                <Tooltip
+                  formatter={(value) => [value.toLocaleString(), 'Devices']}
+                  cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }}
+                />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {barData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -393,7 +475,7 @@ class DrillDownView extends Component {
               <tbody>
                 {data.map((item, index) => (
                   <tr key={item.model_type} style={{ animationDelay: `${index * 10}ms` }}>
-                    <td>{item.model_type}</td>
+                    <td title={item.model_type}>{item.model_type}</td>
                     <td>{parseInt(item.count).toLocaleString()}</td>
                     <td>
                       <button
@@ -420,15 +502,16 @@ class DrillDownView extends Component {
 
     const COLORS = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b', '#fa709a', '#00f2fe'];
 
-    const pieData = data.map((item, index) => ({
+    const barData = data.map((item, index) => ({
       name: item.team_name,
-      value: parseInt(item.count),
+      count: parseInt(item.count),
       fill: COLORS[index % COLORS.length]
     }));
 
     const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
+    const chartHeight = Math.max(300, data.length * 40);
 
-    const title = type === 'total'
+    const title = type === 'total' || type === 'placement_types'
       ? `${selectedVendor} / ${selectedModelType} - Team Distribution`
       : `${selectedDeviceType} / ${selectedVendor} / ${selectedModelType} - Team Distribution`;
 
@@ -438,33 +521,35 @@ class DrillDownView extends Component {
           <h1 className="drilldown-title gradient-text">{title}</h1>
           <p className="drilldown-subtitle">
             Showing {data.length} team{data.length !== 1 ? 's' : ''} with {total} total devices.
-            Click a team to view individual devices.
+            Click a bar to view individual devices.
           </p>
         </div>
 
         <div className="drilldown-chart-section">
           <div className="chart-wrapper">
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={130}
-                  fill="#8884d8"
-                  dataKey="value"
-                  onClick={(_, index) => onTeamClick(data[index])}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {pieData.map((entry, index) => (
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart
+                data={barData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                onClick={(e) => {
+                  if (e && e.activePayload) {
+                    const index = barData.findIndex(d => d.name === e.activePayload[0].payload.name);
+                    if (index >= 0) onTeamClick(data[index]);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value) => [value.toLocaleString(), 'Devices']} cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {barData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -484,7 +569,7 @@ class DrillDownView extends Component {
               <tbody>
                 {data.map((item, index) => (
                   <tr key={item.team_name} style={{ animationDelay: `${index * 10}ms` }}>
-                    <td>{item.team_name}</td>
+                    <td title={item.team_name}>{item.team_name}</td>
                     <td>{parseInt(item.count).toLocaleString()}</td>
                     <td>
                       <button
@@ -509,7 +594,7 @@ class DrillDownView extends Component {
   renderDevicesOnlyView() {
     const { devices, selectedDeviceType, selectedTeam, selectedVendor, selectedModelType, type } = this.props;
 
-    const title = type === 'total'
+    const title = type === 'total' || type === 'placement_types'
       ? `${selectedVendor} / ${selectedModelType} / ${selectedTeam} - Devices`
       : `${selectedDeviceType} / ${selectedVendor} / ${selectedModelType} / ${selectedTeam} - Devices`;
 
@@ -523,6 +608,96 @@ class DrillDownView extends Component {
         </div>
 
         {this.renderDeviceTable(devices, `${selectedModelType} Device List`)}
+      </div>
+    );
+  }
+
+  // Placement type list view: shown after clicking Placement Types tile
+  renderPlacementTypeListView() {
+    const { data, onPlacementTypeClick } = this.props;
+
+    const COLORS = ['#667eea', '#764ba2', '#4facfe', '#f093fb', '#fee140', '#ff6b6b', '#fa709a', '#00f2fe'];
+
+    const barData = data.map((item, index) => ({
+      name: item.placement_type,
+      count: parseInt(item.count),
+      fill: COLORS[index % COLORS.length]
+    }));
+
+    const total = data.reduce((sum, item) => sum + parseInt(item.count), 0);
+    const chartHeight = Math.max(300, data.length * 40);
+
+    return (
+      <div className="drilldown-content">
+        <div className="drilldown-header">
+          <h1 className="drilldown-title gradient-text">Placement Type Distribution</h1>
+          <p className="drilldown-subtitle">
+            Showing {data.length} placement type{data.length !== 1 ? 's' : ''} with {total} total devices.
+            Click a bar to explore vendors.
+          </p>
+        </div>
+
+        <div className="drilldown-chart-section">
+          <div className="chart-wrapper">
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart
+                data={barData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+                onClick={(e) => {
+                  if (e && e.activePayload) {
+                    const index = barData.findIndex(d => d.name === e.activePayload[0].payload.name);
+                    if (index >= 0) onPlacementTypeClick(data[index]);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value) => [value.toLocaleString(), 'Devices']} cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {barData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Clickable placement type table */}
+        <div className="drilldown-table-section glass-panel">
+          <h3 className="table-title">Placement Types ({data.length})</h3>
+          <div className="table-wrapper">
+            <table className="drilldown-table">
+              <thead>
+                <tr>
+                  <th>Placement Type</th>
+                  <th>Device Count</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((item, index) => (
+                  <tr key={item.placement_type} style={{ animationDelay: `${index * 10}ms` }}>
+                    <td title={item.placement_type}>{item.placement_type}</td>
+                    <td>{parseInt(item.count).toLocaleString()}</td>
+                    <td>
+                      <button
+                        className="btn-view-device"
+                        onClick={() => onPlacementTypeClick(item)}
+                        title="Explore vendors"
+                      >
+                        Explore →
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     );
   }
@@ -551,7 +726,7 @@ class DrillDownView extends Component {
                 <th>Model Type</th>
                 <th>Device Type</th>
                 <th>Vendor</th>
-                <th>Team</th>
+                <th>Primary Team</th>
                 <th>Location</th>
                 <th>Owner</th>
                 <th>Actions</th>
@@ -560,16 +735,16 @@ class DrillDownView extends Component {
             <tbody>
               {devices.map((device, index) => (
                 <tr key={device.mac_address} style={{ animationDelay: `${index * 10}ms` }}>
-                  <td className="mono">{device.mac_address}</td>
-                  <td>{device.model_name || '-'}</td>
-                  <td>{device.model_type || '-'}</td>
+                  <td className="mono" title={device.mac_address}>{device.mac_address}</td>
+                  <td title={device.model_name || '-'}>{device.model_name || '-'}</td>
+                  <td title={device.model_type || '-'}>{device.model_type || '-'}</td>
                   <td>
                     <span className="device-type-badge">{device.device_type}</span>
                   </td>
-                  <td>{device.vendor || '-'}</td>
-                  <td>{device.team_name || '-'}</td>
-                  <td>{device.location_site || '-'}</td>
-                  <td>{device.owner_name || 'Unassigned'}</td>
+                  <td title={device.vendor || '-'}>{device.vendor || '-'}</td>
+                  <td title={device.team_name || '-'}>{device.team_name || '-'}</td>
+                  <td title={device.location_site || '-'}>{device.location_site || '-'}</td>
+                  <td title={device.primary_owner || 'Unassigned'}>{device.primary_owner || 'Unassigned'}</td>
                   <td>
                     <button
                       className="btn-view-device"
@@ -613,7 +788,10 @@ class DrillDownView extends Component {
         {/* Vendors tile: read-only pie */}
         {type === 'vendors' && level === 'vendor_only' && this.renderVendorOnlyView()}
 
-        {/* NEW FLOW shared across total + category: Vendor → Model → Team → Devices */}
+        {/* Placement Types: first-level placement type list */}
+        {type === 'placement_types' && level === 'placement_type' && this.renderPlacementTypeListView()}
+
+        {/* NEW FLOW shared across total + category + placement_types: Vendor → Model → Team → Devices */}
         {level === 'vendor' && this.renderVendorView()}
         {level === 'model_type' && this.renderModelTypeView()}
         {level === 'team' && this.renderTeamView()}

@@ -408,6 +408,72 @@ const getTeamsByTypeVendorAndModel = async (req, res) => {
   }
 };
 
+// ============================================
+// PLACEMENT TYPE DRILL-DOWN
+// Placement Types → Vendors → Model Types → Teams → Devices
+// ============================================
+
+// Get all placement types breakdown
+const getAllPlacementTypesBreakdown = async (req, res) => {
+  try {
+    const breakdown = await pool.query(`
+      SELECT placement_type, COUNT(*) as count
+      FROM devices
+      WHERE placement_type IS NOT NULL
+      GROUP BY placement_type
+      ORDER BY count DESC
+    `);
+
+    const devices = await pool.query(`
+      SELECT *
+      FROM devices
+      WHERE placement_type IS NOT NULL
+      ORDER BY placement_type
+    `);
+
+    res.json({
+      breakdown: breakdown.rows,
+      devices: devices.rows,
+      level: 'placement_type'
+    });
+  } catch (error) {
+    console.error('Placement type breakdown error:', error);
+    res.status(500).json({ error: 'Failed to fetch placement type breakdown' });
+  }
+};
+
+// Get vendors for a specific placement type
+const getVendorsByPlacementType = async (req, res) => {
+  try {
+    const { placementType } = req.params;
+
+    const breakdown = await pool.query(`
+      SELECT vendor, COUNT(*) as count
+      FROM devices
+      WHERE placement_type = $1 AND vendor IS NOT NULL
+      GROUP BY vendor
+      ORDER BY count DESC
+    `, [placementType]);
+
+    const devices = await pool.query(`
+      SELECT *
+      FROM devices
+      WHERE placement_type = $1
+      ORDER BY vendor
+    `, [placementType]);
+
+    res.json({
+      breakdown: breakdown.rows,
+      devices: devices.rows,
+      level: 'vendor',
+      placementType
+    });
+  } catch (error) {
+    console.error('Vendors by placement type error:', error);
+    res.status(500).json({ error: 'Failed to fetch vendors by placement type' });
+  }
+};
+
 module.exports = {
   getTeamBreakdown,
   getVendorBreakdown,
@@ -421,5 +487,8 @@ module.exports = {
   getModelTypesByVendor,
   getModelTypesByVendorAndType,
   getTeamsByVendorAndModel,
-  getTeamsByTypeVendorAndModel
+  getTeamsByTypeVendorAndModel,
+  // Placement type drill-down
+  getAllPlacementTypesBreakdown,
+  getVendorsByPlacementType
 };

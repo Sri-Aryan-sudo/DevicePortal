@@ -47,7 +47,8 @@ class Login extends Component {
     this.setState({ loading: true, error: null });
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBase}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -196,6 +197,19 @@ class Login extends Component {
               )}
             </button>
           </form>
+
+          <div className="login-divider">
+            <span className="divider-text">or</span>
+          </div>
+
+          <button
+            type="button"
+            className="viewer-button"
+            onClick={this.props.onViewerAccess}
+          >
+            <span className="viewer-icon">👁️</span>
+            <span>Continue as Viewer</span>
+          </button>
 
           <div className="login-footer">
             <p className="login-help">

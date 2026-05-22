@@ -48,7 +48,6 @@ class DeviceExplorer extends Component {
     this.handleDeviceSelect = this.handleDeviceSelect.bind(this);
     this.handlePageChange = this.handlePageChange.bind(this);
     this.handleRetry = this.handleRetry.bind(this);
-    this.handleExport = this.handleExport.bind(this);
   }
 
   componentWillUnmount() {
@@ -152,6 +151,7 @@ class DeviceExplorer extends Component {
         (device.model_alias && device.model_alias.toLowerCase().includes(query)) ||
         (device.vendor && device.vendor.toLowerCase().includes(query)) ||
         (device.team_name && device.team_name.toLowerCase().includes(query)) ||
+        (device.current_team && device.current_team.toLowerCase().includes(query)) ||
         // Flexible model_type search: allows partial matches without underscores
         (normalizedModelType && normalizedModelType.includes(query))
       );
@@ -218,7 +218,7 @@ class DeviceExplorer extends Component {
       if (index > -1) {
         currentFilters.splice(index, 1);
       } else {
-        currentFilters.splice(0, currentFilters.length, value);
+        currentFilters.push(value);
       }
 
       return {
@@ -271,10 +271,6 @@ class DeviceExplorer extends Component {
     this.fetchDevices();
   }
 
-  handleExport() {
-    console.log('Export functionality');
-  }
-
   render() {
     const { 
       filteredDevices, 
@@ -316,7 +312,6 @@ class DeviceExplorer extends Component {
           <ExplorerHeader
             totalRecords={totalRecords}
             onToggleFilter={this.handleToggleFilter}
-            onExport={this.handleExport}
           />
 
           <SearchBar

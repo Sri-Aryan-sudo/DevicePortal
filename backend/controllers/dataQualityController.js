@@ -38,7 +38,7 @@ const getDataQuality = async (req, res) => {
 
     // Check for missing owner
     const missingOwnerResult = await pool.query(`
-      SELECT COUNT(*) FROM devices WHERE owner_name IS NULL OR owner_name = ''
+      SELECT COUNT(*) FROM devices WHERE primary_owner IS NULL OR primary_owner = ''
     `);
     const missingOwnerCount = parseInt(missingOwnerResult.rows[0].count);
 
@@ -163,7 +163,7 @@ const getDataQuality = async (req, res) => {
         severity: 'low',
         count: missingOwnerCount,
         description: 'Missing owner information',
-        field: 'owner_name',
+        field: 'primary_owner',
         impact: 'Low - Owner tracking affected'
       });
     }

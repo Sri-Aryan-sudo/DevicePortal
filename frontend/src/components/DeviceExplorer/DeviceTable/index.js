@@ -49,6 +49,15 @@ const DeviceTable = memo(({
   return (
     <div className="devices-table-container glass-panel">
       <table className="devices-table">
+        <colgroup>
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '14%' }} />
+          <col style={{ width: '14%' }} />
+          <col style={{ width: '14%' }} />
+          <col style={{ width: '10%' }} />
+        </colgroup>
         <thead>
           <tr>
             <th onClick={() => onSort('mac_address')}>
@@ -64,7 +73,7 @@ const DeviceTable = memo(({
               Vendor{renderSortIndicator('vendor')}
             </th>
             <th onClick={() => onSort('team_name')}>
-              Team{renderSortIndicator('team_name')}
+              Primary Team{renderSortIndicator('team_name')}
             </th>
             <th onClick={() => onSort('location_site')}>
               Location{renderSortIndicator('location_site')}

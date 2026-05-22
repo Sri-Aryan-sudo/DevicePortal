@@ -213,7 +213,7 @@
 
 .team-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 180px 1fr;
   gap: var(--spacing-md);
   align-items: center;
   animation: slideInLeft 0.6s ease-out forwards;
@@ -244,6 +244,10 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
 }
 
 .team-bar-container {
@@ -329,6 +333,10 @@
 .vendor-name {
   font-weight: 500;
   color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
 }
 
 .vendor-percentage {
@@ -660,6 +668,10 @@
 .vendor-list-name {
   font-weight: 600;
   color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .vendor-list-count {
@@ -729,6 +741,10 @@
   padding: var(--spacing-md);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .device-type-badge-small {

@@ -23,7 +23,7 @@ class UserManagement extends Component {
         confirmPassword: '',
         role: 'VIEWER',
         fullName: '',
-        department: ''
+        teamName: ''
       }
     };
   }
@@ -74,7 +74,7 @@ class UserManagement extends Component {
         confirmPassword: '',
         role: 'VIEWER',
         fullName: '',
-        department: ''
+        teamName: ''
       }
     }));
   }
@@ -111,7 +111,7 @@ class UserManagement extends Component {
         password: formData.password,
         role: formData.role,
         fullName: formData.fullName || undefined,
-        department: formData.department || undefined
+        teamName: formData.teamName || undefined
       };
       
       await authAPI.createUser(userData, token);
@@ -127,7 +127,7 @@ class UserManagement extends Component {
           confirmPassword: '',
           role: 'VIEWER',
           fullName: '',
-          department: ''
+          teamName: ''
         }
       });
       
@@ -251,12 +251,12 @@ class UserManagement extends Component {
             </div>
             
             <div className="form-group full-width">
-              <label htmlFor="department">Department</label>
+              <label htmlFor="teamName">Team Name</label>
               <input
                 type="text"
-                id="department"
-                name="department"
-                value={formData.department}
+                id="teamName"
+                name="teamName"
+                value={formData.teamName}
                 onChange={this.handleInputChange}
                 placeholder="Engineering"
                 disabled={creating}
@@ -351,7 +351,7 @@ class UserManagement extends Component {
                   <th>Email</th>
                   <th>Full Name</th>
                   <th>Role</th>
-                  <th>Department</th>
+                  <th>Team Name</th>
                   <th>Status</th>
                   <th>Last Login</th>
                   <th>Created</th>
@@ -368,7 +368,7 @@ class UserManagement extends Component {
                         {user.role}
                       </span>
                     </td>
-                    <td>{user.department || '-'}</td>
+                    <td>{user.teamName || '-'}</td>
                     <td>
                       <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
                         {user.isActive ? 'Active' : 'Inactive'}

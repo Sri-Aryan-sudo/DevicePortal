@@ -17,6 +17,7 @@ class App extends Component {
     // Check for existing auth on mount
     const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     const userInfo = localStorage.getItem('userInfo') || sessionStorage.getItem('userInfo');
+    const viewerMode = sessionStorage.getItem('viewerMode');
     
     this.state = {
       // Authentication state
@@ -28,11 +29,18 @@ class App extends Component {
       // App state
       currentView: 'dashboard',
       sidebarOpen: true,
-      selectedDevice: null
+      selectedDevice: null,
+      dataRefreshKey: 0
     };
     
+    // If viewer mode, grant access without token
+    if (viewerMode === 'true') {
+      this.state.isAuthenticated = true;
+      this.state.currentUser = { role: 'VIEWER', fullName: 'Viewer' };
+      this.state.authLoading = false;
+    }
     // If token exists, verify it
-    if (authToken && userInfo) {
+    else if (authToken && userInfo) {
       this.state.authToken = authToken;
       try {
         this.state.currentUser = JSON.parse(userInfo);
@@ -43,6 +51,11 @@ class App extends Component {
   }
 
   async componentDidMount() {
+    // Skip token verification if in viewer mode
+    if (this.state.currentUser?.role === 'VIEWER' && !this.state.authToken) {
+      return;
+    }
+
     // Verify existing token if present
     const { authToken } = this.state;
     
@@ -55,7 +68,8 @@ class App extends Component {
 
   verifyToken = async (token) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify', {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBase}/auth/verify`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -81,11 +95,24 @@ class App extends Component {
   }
 
   handleLoginSuccess = (token, user) => {
+    // Clear viewer mode if logging in
+    sessionStorage.removeItem('viewerMode');
     this.setState({
       isAuthenticated: true,
       authToken: token,
       currentUser: user,
       authLoading: false
+    });
+  }
+
+  handleViewerAccess = () => {
+    sessionStorage.setItem('viewerMode', 'true');
+    this.setState({
+      isAuthenticated: true,
+      authToken: null,
+      currentUser: { role: 'VIEWER', fullName: 'Viewer' },
+      authLoading: false,
+      currentView: 'dashboard'
     });
   }
 
@@ -95,6 +122,7 @@ class App extends Component {
     localStorage.removeItem('userInfo');
     sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('userInfo');
+    sessionStorage.removeItem('viewerMode');
     
     // Reset state
     this.setState({
@@ -124,6 +152,13 @@ class App extends Component {
     });
   }
 
+  handleUploadSuccess = () => {
+    // Increment refresh key to force Dashboard/Explorer to re-fetch
+    this.setState(prevState => ({
+      dataRefreshKey: prevState.dataRefreshKey + 1
+    }));
+  }
+
   toggleSidebar = () => {
     this.setState(prevState => ({
       sidebarOpen: !prevState.sidebarOpen
@@ -131,13 +166,13 @@ class App extends Component {
   }
 
   renderCurrentView = () => {
-    const { currentView, selectedDevice, currentUser, authToken } = this.state;
+    const { currentView, selectedDevice, currentUser, authToken, dataRefreshKey } = this.state;
 
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard onDeviceSelect={this.handleDeviceSelect} />;
+        return <Dashboard key={`dashboard-${dataRefreshKey}`} onDeviceSelect={this.handleDeviceSelect} />;
       case 'explorer':
-        return <DeviceExplorer onDeviceSelect={this.handleDeviceSelect} />;
+        return <DeviceExplorer key={`explorer-${dataRefreshKey}`} onDeviceSelect={this.handleDeviceSelect} />;
       case 'device-detail':
         return (
           <DeviceDetail 
@@ -152,7 +187,7 @@ class App extends Component {
       case 'user-management':
         return <UserManagement />;
       case 'csv-ingestion':
-        return <CSVIngestion />;
+        return <CSVIngestion onUploadSuccess={this.handleUploadSuccess} />;
       default:
         return <Dashboard onDeviceSelect={this.handleDeviceSelect} />;
     }
@@ -188,8 +223,10 @@ class App extends Component {
 
     // Show login page if not authenticated
     if (!isAuthenticated) {
-      return <Login onLoginSuccess={this.handleLoginSuccess} />;
+      return <Login onLoginSuccess={this.handleLoginSuccess} onViewerAccess={this.handleViewerAccess} />;
     }
+
+    const isViewer = currentUser?.role === 'VIEWER' && !this.state.authToken;
 
     // Show main app if authenticated
     return (
@@ -267,13 +304,23 @@ class App extends Component {
               )}
             </div>
             {sidebarOpen && (
-              <button 
-                className="logout-button"
-                onClick={this.handleLogout}
-                title="Logout"
-              >
-                🚪 Logout
-              </button>
+              isViewer ? (
+                <button 
+                  className="logout-button"
+                  onClick={this.handleLogout}
+                  title="Go to Login"
+                >
+                  🔐 Login
+                </button>
+              ) : (
+                <button 
+                  className="logout-button"
+                  onClick={this.handleLogout}
+                  title="Logout"
+                >
+                  🚪 Logout
+                </button>
+              )
             )}
           </div>
         </aside>

@@ -36,7 +36,7 @@ class UploadValidator extends Component {
     'location_site',
     'placement_type',
     'usage_purpose',
-    'owner_name',
+    'primary_owner',
     'utilization_week_7',
     'utilization_week_8',
     'automation_filter',
@@ -160,7 +160,8 @@ class UploadValidator extends Component {
         throw new Error('Not authenticated. Please login.');
       }
 
-      const response = await fetch('http://localhost:5000/api/upload-csv', {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBase}/upload-csv`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -177,7 +178,10 @@ class UploadValidator extends Component {
           uploadResults: data
         });
       } else {
-        throw new Error(data.error || 'Upload failed');
+        let errorMsg = data.error || 'Upload failed';
+        if (data.details) errorMsg += ' ' + data.details;
+        if (data.hint) errorMsg += ' ' + data.hint;
+        throw new Error(errorMsg);
       }
 
     } catch (error) {
