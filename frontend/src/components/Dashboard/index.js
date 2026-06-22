@@ -27,7 +27,13 @@ class Dashboard extends Component {
       selectedVendor: null,
       selectedModelType: null,
       selectedPlacementType: null,
-      loadingDrillDown: false
+      loadingDrillDown: false,
+
+      // Placement distribution modal
+      showPlacementModal: false,
+      placementModalType: null,
+      placementModalDevices: [],
+      loadingPlacementModal: false
     };
   }
 
@@ -407,6 +413,92 @@ class Dashboard extends Component {
     );
   }
 
+  renderPlacementDevicesModal() {
+    const { showPlacementModal, placementModalType, placementModalDevices, loadingPlacementModal } = this.state;
+    if (!showPlacementModal) return null;
+
+    return (
+      <div
+        className="placement-modal-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) this.setState({ showPlacementModal: false });
+        }}
+      >
+        <div className="placement-modal">
+          <div className="placement-modal-header">
+            <div>
+              <h2 className="placement-modal-title gradient-text">{placementModalType} — Device List</h2>
+              {!loadingPlacementModal && (
+                <p className="placement-modal-subtitle">{placementModalDevices.length.toLocaleString()} device{placementModalDevices.length !== 1 ? 's' : ''}</p>
+              )}
+            </div>
+            <button
+              className="placement-modal-close"
+              onClick={() => this.setState({ showPlacementModal: false })}
+              title="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="placement-modal-content">
+            {loadingPlacementModal ? (
+              <div className="placement-modal-loading">
+                <div className="spinner" />
+                <p>Loading devices...</p>
+              </div>
+            ) : placementModalDevices.length === 0 ? (
+              <div className="placement-modal-empty">No devices found for this placement type.</div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="drilldown-table">
+                  <thead>
+                    <tr>
+                      <th>MAC Address</th>
+                      <th>Model Name</th>
+                      <th>Model Type</th>
+                      <th>Device Type</th>
+                      <th>Vendor</th>
+                      <th>Primary Team</th>
+                      <th>Location</th>
+                      <th>Owner</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {placementModalDevices.map((device, index) => (
+                      <tr key={device.mac_address} style={{ animationDelay: `${index * 5}ms` }}>
+                        <td className="mono" title={device.mac_address}>{device.mac_address}</td>
+                        <td title={device.model_name || '-'}>{device.model_name || '-'}</td>
+                        <td title={device.model_type || '-'}>{device.model_type || '-'}</td>
+                        <td><span className="device-type-badge">{device.device_type}</span></td>
+                        <td title={device.vendor || '-'}>{device.vendor || '-'}</td>
+                        <td title={device.team_name || '-'}>{device.team_name || '-'}</td>
+                        <td title={device.location_site || '-'}>{device.location_site || '-'}</td>
+                        <td title={device.primary_owner || 'Unassigned'}>{device.primary_owner || 'Unassigned'}</td>
+                        <td>
+                          <button
+                            className="btn-view-device"
+                            onClick={() => {
+                              this.setState({ showPlacementModal: false });
+                              this.props.onDeviceSelect && this.props.onDeviceSelect(device);
+                            }}
+                            title="View device details"
+                          >
+                            View →
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   renderDevicesByTeam() {
     const { devicesByTeam } = this.state;
     const maxCount = Math.max(...devicesByTeam.map(d => d.count));
@@ -442,6 +534,24 @@ class Dashboard extends Component {
     );
   }
 
+  handlePlacementDistributionItemClick = async (item) => {
+    this.setState({
+      showPlacementModal: true,
+      placementModalType: item.placement_type,
+      placementModalDevices: [],
+      loadingPlacementModal: true
+    });
+    try {
+      const response = await drillDownAPI.getVendorsByPlacementType(item.placement_type);
+      this.setState({
+        placementModalDevices: response.data.devices,
+        loadingPlacementModal: false
+      });
+    } catch (error) {
+      this.setState({ loadingPlacementModal: false });
+    }
+  }
+
   renderPlacementTypeDistribution() {
     const { placementTypeDistribution } = this.state;
 
@@ -450,7 +560,12 @@ class Dashboard extends Component {
         <h3 className="panel-title">Placement Type Distribution</h3>
         <div className="vendor-chart">
           {placementTypeDistribution.map((item, index) => (
-            <div key={index} className="vendor-item">
+            <div
+              key={index}
+              className="vendor-item placement-item-clickable"
+              onClick={() => this.handlePlacementDistributionItemClick(item)}
+              title={`Click to see all ${item.placement_type} devices`}
+            >
               <div className="vendor-header">
                 <span className="vendor-name" title={item.placement_type}>{item.placement_type}</span>
                 <span className="vendor-percentage">{item.percentage}%</span>
@@ -464,7 +579,7 @@ class Dashboard extends Component {
                   }}
                 />
               </div>
-              <div className="vendor-count">{item.count.toLocaleString()} devices</div>
+              <div className="vendor-count">{item.count.toLocaleString()} devices · Click to view list</div>
             </div>
           ))}
         </div>
@@ -568,6 +683,7 @@ class Dashboard extends Component {
 
     return (
       <div className="dashboard-container">
+        {this.renderPlacementDevicesModal()}
         <div className="dashboard-header">
           <div>
             <h1 className="dashboard-title gradient-text">Executive Dashboard</h1>
