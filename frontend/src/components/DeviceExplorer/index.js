@@ -31,7 +31,7 @@ class DeviceExplorer extends Component {
       sortOrder: 'asc',
       selectedDevice: null,
       currentPage: 1,
-      itemsPerPage: 15,
+      itemsPerPage: 30,
       totalRecords: 0,
       loading: true,
       error: null
@@ -179,7 +179,9 @@ class DeviceExplorer extends Component {
     
     this.setState({ 
       searchQuery: newQuery,
-      filteredDevices: filtered
+      filteredDevices: filtered,
+      totalRecords: filtered.length,
+      currentPage: 1
     });
   }
 
@@ -200,7 +202,9 @@ class DeviceExplorer extends Component {
     
     this.setState({ 
       searchQuery: '', 
-      filteredDevices: filtered
+      filteredDevices: filtered,
+      totalRecords: filtered.length,
+      currentPage: 1
     });
   }
 
@@ -262,9 +266,7 @@ class DeviceExplorer extends Component {
   }
 
   handlePageChange(newPage) {
-    this.setState({ currentPage: newPage }, () => {
-      this.fetchDevices();
-    });
+    this.setState({ currentPage: newPage });
   }
 
   handleRetry() {
@@ -296,6 +298,8 @@ class DeviceExplorer extends Component {
     }
 
     const totalPages = Math.ceil(totalRecords / itemsPerPage);
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const paginatedDevices = filteredDevices.slice(startIdx, startIdx + itemsPerPage);
 
     return (
       <div className="device-explorer-container">
@@ -321,7 +325,7 @@ class DeviceExplorer extends Component {
           />
 
           <DeviceTable
-            devices={filteredDevices}
+            devices={paginatedDevices}
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSort={this.handleSort}
