@@ -4,7 +4,6 @@
   overflow-y: auto;
   padding: var(--spacing-2xl);
   position: relative;
-  z-index: 1;
 }
 
 /* ============================================
