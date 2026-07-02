@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import './index.css';
 import { deviceAPI, drillDownAPI } from '../../services/api';
 import DrillDownView from './DrillDownView';
@@ -417,7 +418,7 @@ class Dashboard extends Component {
     const { showPlacementModal, placementModalType, placementModalDevices, loadingPlacementModal } = this.state;
     if (!showPlacementModal) return null;
 
-    return (
+    return ReactDOM.createPortal(
       <div
         className="placement-modal-overlay"
         onClick={(e) => {
@@ -495,7 +496,8 @@ class Dashboard extends Component {
             )}
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
