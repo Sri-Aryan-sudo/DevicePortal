@@ -15,7 +15,7 @@ function getAIModel() {
   }
   const genAI = new GoogleGenerativeAI(apiKey);
   _aiModel = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.0-flash',
     systemInstruction: SYSTEM_PROMPT,
     generationConfig: { maxOutputTokens: 400, temperature: 0.1 }
   });
@@ -240,6 +240,18 @@ const askQuery = async (req, res) => {
   } catch (err) {
     console.error('[NLQuery] Error:', err.message);
 
+    if (err.message?.includes('429') || err.message?.includes('quota') || err.message?.includes('Too Many Requests')) {
+      return res.status(429).json({
+        error: 'The AI service is temporarily over capacity. Please wait a moment and try again.'
+      });
+    }
+    if (err.message?.includes('404') || err.message?.includes('not found')) {
+      // Model name mismatch — reset cached model so next request retries
+      _aiModel = null;
+      return res.status(503).json({
+        error: 'AI model is unavailable. Please contact the administrator.'
+      });
+    }
     if (err.message?.includes('column') && err.message?.includes('does not exist')) {
       return res.status(422).json({
         error: 'The query referenced an unknown column. Please rephrase your question.',
