@@ -14,6 +14,9 @@ const nlQueryRoutes = require('./routes/nlQueryRoutes');
 const app = express();
 const PORT = config.PORT;
 
+// Trust first proxy (nginx) — required for correct IP detection behind reverse proxy
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet({ contentSecurityPolicy: false }));
 
