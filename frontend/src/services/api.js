@@ -48,7 +48,6 @@ export const deviceAPI = {
   getAllDevices: (params) => api.get('/devices', { params: { ...params, limit: 100000, page: 1 } }),
 };
 
-// Drill-Down API
 export const drillDownAPI = {
   // Category drill-down (PANEL, BOARD, STB)
   getTeamBreakdown: (deviceType) => api.get(`/drilldown/${deviceType}/teams`),
@@ -76,3 +75,11 @@ export const drillDownAPI = {
 };
 
 export default api;
+
+// Natural Language Query API
+export const nlQueryAPI = {
+  ask: (question, conversationHistory = [], token) =>
+    api.post('/nl-query', { question, conversationHistory }, {
+      headers: { Authorization: `Bearer ${token}` }
+    }),
+};

@@ -30,4 +30,7 @@ module.exports = {
 
   // Bcrypt
   BCRYPT_ROUNDS: parseInt(process.env.BCRYPT_ROUNDS, 10) || 12,
+
+  // Gemini AI — optional, required only for the AI query feature
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || null,
 };

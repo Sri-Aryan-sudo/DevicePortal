@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
 const drillDownRoutes = require('./routes/drillDownRoutes');
 const csvRoutes = require('./routes/csvRoutes');
+const nlQueryRoutes = require('./routes/nlQueryRoutes');
 
 const app = express();
 const PORT = config.PORT;
@@ -45,6 +46,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', deviceRoutes);
 app.use('/api', drillDownRoutes);
 app.use('/api', csvRoutes);
+app.use('/api', nlQueryRoutes);
 
 // Serve React frontend in production
 if (config.NODE_ENV === 'production') {

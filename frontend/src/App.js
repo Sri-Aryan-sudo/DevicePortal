@@ -3,9 +3,9 @@ import Dashboard from './components/Dashboard';
 import DeviceExplorer from './components/DeviceExplorer';
 import DeviceDetail from './components/DeviceDetail';
 import UploadValidator from './components/UploadValidator';
-
 import UserManagement from './components/UserManagement';
 import CSVIngestion from './components/CSVIngestion';
+import NLQuery from './components/NLQuery';
 import Login from './components/Login';
 import './global.css';
 import './App.css';
@@ -173,6 +173,8 @@ class App extends Component {
         return <Dashboard key={`dashboard-${dataRefreshKey}`} onDeviceSelect={this.handleDeviceSelect} />;
       case 'explorer':
         return <DeviceExplorer key={`explorer-${dataRefreshKey}`} onDeviceSelect={this.handleDeviceSelect} />;
+      case 'nl-query':
+        return <NLQuery onDeviceSelect={this.handleDeviceSelect} />;
       case 'device-detail':
         return (
           <DeviceDetail 
@@ -263,6 +265,17 @@ class App extends Component {
               <span className="nav-icon">🔍</span>
               {sidebarOpen && <span className="nav-label">Device Explorer</span>}
             </button>
+
+            {/* AI Assistant — authenticated users only */}
+            {!isViewer && (
+              <button
+                className={`nav-item ${currentView === 'nl-query' ? 'active' : ''}`}
+                onClick={() => this.navigate('nl-query')}
+              >
+                <span className="nav-icon">🤖</span>
+                {sidebarOpen && <span className="nav-label">AI Assistant</span>}
+              </button>
+            )}
 
 
             
