@@ -222,6 +222,33 @@
   opacity: 0;
 }
 
+.team-row-clickable {
+  grid-template-columns: 180px 1fr auto;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin: 0 calc(-1 * var(--spacing-sm));
+  transition: background var(--transition-base), transform var(--transition-base);
+}
+
+.team-row-clickable:hover {
+  background: var(--color-glass-light);
+  transform: translateX(4px);
+}
+
+.team-click-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.team-row-clickable:hover .team-click-hint {
+  opacity: 1;
+}
+
 .team-row:nth-child(1) { animation-delay: 0ms; }
 .team-row:nth-child(2) { animation-delay: 100ms; }
 .team-row:nth-child(3) { animation-delay: 200ms; }

@@ -34,7 +34,13 @@ class Dashboard extends Component {
       showPlacementModal: false,
       placementModalType: null,
       placementModalDevices: [],
-      loadingPlacementModal: false
+      loadingPlacementModal: false,
+
+      // Team distribution modal
+      showTeamModal: false,
+      teamModalName: null,
+      teamModalDevices: [],
+      loadingTeamModal: false
     };
   }
 
@@ -501,6 +507,93 @@ class Dashboard extends Component {
     );
   }
 
+  renderTeamDevicesModal() {
+    const { showTeamModal, teamModalName, teamModalDevices, loadingTeamModal } = this.state;
+    if (!showTeamModal) return null;
+
+    return ReactDOM.createPortal(
+      <div
+        className="placement-modal-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) this.setState({ showTeamModal: false });
+        }}
+      >
+        <div className="placement-modal">
+          <div className="placement-modal-header">
+            <div>
+              <h2 className="placement-modal-title gradient-text">{teamModalName} — Device List</h2>
+              {!loadingTeamModal && (
+                <p className="placement-modal-subtitle">{teamModalDevices.length.toLocaleString()} device{teamModalDevices.length !== 1 ? 's' : ''}</p>
+              )}
+            </div>
+            <button
+              className="placement-modal-close"
+              onClick={() => this.setState({ showTeamModal: false })}
+              title="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="placement-modal-content">
+            {loadingTeamModal ? (
+              <div className="placement-modal-loading">
+                <div className="spinner" />
+                <p>Loading devices...</p>
+              </div>
+            ) : teamModalDevices.length === 0 ? (
+              <div className="placement-modal-empty">No devices found for this team.</div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="drilldown-table">
+                  <thead>
+                    <tr>
+                      <th>MAC Address</th>
+                      <th>Model Name</th>
+                      <th>Model Type</th>
+                      <th>Device Type</th>
+                      <th>Vendor</th>
+                      <th>Placement Type</th>
+                      <th>Location</th>
+                      <th>Owner</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamModalDevices.map((device, index) => (
+                      <tr key={device.mac_address} style={{ animationDelay: `${index * 5}ms` }}>
+                        <td className="mono" title={device.mac_address}>{device.mac_address}</td>
+                        <td title={device.model_name || '-'}>{device.model_name || '-'}</td>
+                        <td title={device.model_type || '-'}>{device.model_type || '-'}</td>
+                        <td><span className="device-type-badge">{device.device_type}</span></td>
+                        <td title={device.vendor || '-'}>{device.vendor || '-'}</td>
+                        <td title={device.placement_type || '-'}>{device.placement_type || '-'}</td>
+                        <td title={device.location_site || '-'}>{device.location_site || '-'}</td>
+                        <td title={device.primary_owner || 'Unassigned'}>{device.primary_owner || 'Unassigned'}</td>
+                        <td>
+                          <button
+                            className="btn-view-device"
+                            onClick={() => {
+                              this.setState({ showTeamModal: false });
+                              this.props.onDeviceSelect && this.props.onDeviceSelect(device);
+                            }}
+                            title="View device details"
+                          >
+                            View →
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
   renderDevicesByTeam() {
     const { devicesByTeam } = this.state;
     const maxCount = Math.max(...devicesByTeam.map(d => d.count));
@@ -510,7 +603,12 @@ class Dashboard extends Component {
         <h3 className="panel-title">Devices by Primary Team</h3>
         <div className="team-chart">
           {devicesByTeam.map((item, index) => (
-            <div key={index} className="team-row">
+            <div
+              key={index}
+              className="team-row team-row-clickable"
+              onClick={() => this.handleTeamDistributionItemClick(item)}
+              title={`Click to see all ${item.team} devices`}
+            >
               <div className="team-info">
                 <div 
                   className="team-color-dot" 
@@ -529,6 +627,7 @@ class Dashboard extends Component {
                   <span className="team-count">{item.count.toLocaleString()}</span>
                 </div>
               </div>
+              <span className="team-click-hint">Click to view →</span>
             </div>
           ))}
         </div>
@@ -551,6 +650,28 @@ class Dashboard extends Component {
       });
     } catch (error) {
       this.setState({ loadingPlacementModal: false });
+    }
+  }
+
+  handleTeamDistributionItemClick = async (item) => {
+    this.setState({
+      showTeamModal: true,
+      teamModalName: item.team,
+      teamModalDevices: [],
+      loadingTeamModal: true
+    });
+    try {
+      const response = await deviceAPI.getDevices({
+        team: item.team,
+        page: 1,
+        limit: 10000
+      });
+      this.setState({
+        teamModalDevices: response.data.devices,
+        loadingTeamModal: false
+      });
+    } catch (error) {
+      this.setState({ loadingTeamModal: false });
     }
   }
 
@@ -686,6 +807,7 @@ class Dashboard extends Component {
     return (
       <div className="dashboard-container">
         {this.renderPlacementDevicesModal()}
+        {this.renderTeamDevicesModal()}
         <div className="dashboard-header">
           <div>
             <h1 className="dashboard-title gradient-text">Executive Dashboard</h1>
