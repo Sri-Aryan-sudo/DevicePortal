@@ -88,12 +88,6 @@ const refreshCache = async (req, res) => {
 module.exports = { askQuery, refreshCache };
 
 
-// ============================================================
-// AI MODEL — lazy init so missing key doesn't crash the server
-// ============================================================
-
-let _aiModel = null;
-
 function getAIModel() {
   if (_aiModel) return _aiModel;
   const apiKey = process.env.GEMINI_API_KEY;
