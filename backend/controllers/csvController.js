@@ -4,6 +4,7 @@ const csv = require('csv-parser');
 const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
+const dictionaryCache = require('../services/nlQueryEngine/dictionaryCache');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -402,6 +403,11 @@ const uploadCSV = async (req, res) => {
     fs.unlinkSync(filePath);
 
     console.log(`CSV upload complete: ${devices.length} total, ${validDevices.length} valid, ${invalidDevices.length} invalid, ${insertedCount} inserted, ${updatedCount} updated, ${errorCount} errors`);
+
+    // Refresh NL query dictionary cache so new vendors/teams/users are immediately queryable
+    if (dictionaryCache && insertedCount + updatedCount > 0) {
+      dictionaryCache.refresh().catch(err => console.error('Dictionary refresh after CSV upload failed:', err.message));
+    }
 
     res.json({
       success: true,

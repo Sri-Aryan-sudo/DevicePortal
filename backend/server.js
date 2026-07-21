@@ -10,6 +10,7 @@ const deviceRoutes = require('./routes/deviceRoutes');
 const drillDownRoutes = require('./routes/drillDownRoutes');
 const csvRoutes = require('./routes/csvRoutes');
 const nlQueryRoutes = require('./routes/nlQueryRoutes');
+const dictionaryCache = require('./services/nlQueryEngine/dictionaryCache');
 
 const app = express();
 const PORT = config.PORT;
@@ -68,6 +69,8 @@ app.use((err, req, res, next) => {
 
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} [${config.NODE_ENV}]`);
+  // Load NL query dictionary cache after DB connections are ready
+  dictionaryCache.load().catch(err => console.error('Dictionary cache init failed:', err.message));
 });
 
 // Graceful shutdown

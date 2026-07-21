@@ -4,15 +4,17 @@ import { nlQueryAPI } from '../../services/api';
 
 const EXAMPLE_QUERIES = [
   'Show all Sharp panels',
+  'Show all Hisense boards',
   'List all devices currently with WebApps',
-  'How many boards are there in each team?',
   'Show all devices with no current user assigned',
   'List all Pioneer panels in Bangalore',
   'Show all devices belonging to the OTT team',
-  'How many devices are currently available?',
+  'How many STBs are available?',
   'Show devices with utilization greater than 80%',
-  'Show all devices owned by the Middleware team',
-  'List all XUMO devices',
+  'Count all boards',
+  'Count devices by vendor',
+  'Count devices by team',
+  'Show all devices in Rack 5',
 ];
 
 const PAGE_SIZE = 50;
@@ -35,34 +37,17 @@ class NLQuery extends Component {
     return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
   }
 
-  buildHistory() {
-    // Send last 5 exchanges (10 turns) to backend for conversation context
-    const { conversations } = this.state;
-    const history = [];
-    for (const conv of conversations.slice(-5)) {
-      history.push({ role: 'user', content: conv.question });
-      if (conv.result?.sql) {
-        history.push({ role: 'assistant', content: conv.result.sql });
-      } else {
-        history.push({ role: 'assistant', content: 'No result' });
-      }
-    }
-    return history;
-  }
-
   handleSubmit = async (e) => {
     e?.preventDefault();
     const { question } = this.state;
     const trimmed = question.trim();
     if (!trimmed || this.state.loading) return;
 
-    const history = this.buildHistory();
-
     this.setState({ loading: true, question: '', currentPage: 1, showSQL: false });
 
     try {
       const token = this.getAuthToken();
-      const response = await nlQueryAPI.ask(trimmed, history, token);
+      const response = await nlQueryAPI.ask(trimmed, [], token);
       const result = response.data;
 
       this.setState(prev => ({
@@ -77,12 +62,14 @@ class NLQuery extends Component {
       }));
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to process your query. Please try again.';
+      const hint = err.response?.data?.hint || null;
       this.setState(prev => ({
         conversations: [...prev.conversations, {
           question: trimmed,
           summary: null,
           result: null,
           error: errorMsg,
+          hint,
         }],
         loading: false,
       }));
@@ -247,7 +234,8 @@ class NLQuery extends Component {
 
         {latest.error ? (
           <div className="nlq-error-card">
-            <span>⚠️</span> {latest.error}
+            <div><span>⚠️</span> {latest.error}</div>
+            {latest.hint && <div className="nlq-error-hint">{latest.hint}</div>}
           </div>
         ) : latest.result ? (() => {
           const { result } = latest;
@@ -267,7 +255,20 @@ class NLQuery extends Component {
                   )}
                 </div>
               </div>
-
+              {/* What I understood */}
+              {(result.explanation || (result.matchInfo && result.matchInfo.length > 0)) && (
+                <div className="nlq-understood-card">
+                  <div className="nlq-understood-label">\ud83d\udd0d What I understood</div>
+                  {result.explanation && (
+                    <div className="nlq-understood-explanation">{result.explanation}</div>
+                  )}
+                  {result.matchInfo && result.matchInfo.filter(m => !m.exact).map((m, i) => (
+                    <div key={i} className="nlq-match-hint">
+                      \u2248 &ldquo;{m.input}&rdquo; matched to <strong>{m.matched}</strong> ({m.field.replace(/_/g, ' ')})
+                    </div>
+                  ))}
+                </div>
+              )}
               {isSingleAggregate ? (
                 <div className="nlq-stat-card">
                   <div className="nlq-stat-value">
