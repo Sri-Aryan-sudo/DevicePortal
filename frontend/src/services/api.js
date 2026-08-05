@@ -42,7 +42,9 @@ export const deviceAPI = {
       'Authorization': `Bearer ${token}`
     }
   }),
-  deleteDevice: (mac) => api.delete(`/devices/${mac}`),
+  deleteDevice: (mac, token) => api.delete(`/devices/${mac}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }),
   getStatistics: () => api.get('/statistics'),
   getFilterOptions: () => api.get('/filter-options'),
   getAllDevices: (params) => api.get('/devices', { params: { ...params, limit: 100000, page: 1 } }),

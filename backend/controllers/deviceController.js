@@ -313,14 +313,24 @@ const updateDeviceByPOC = async (req, res) => {
 const deleteDevice = async (req, res) => {
   try {
     const { mac } = req.params;
-    const result = await pool.query('DELETE FROM devices WHERE mac_address = $1 RETURNING *', [mac]);
+    const deletedBy = req.user?.ntid || req.user?.email || 'unknown';
 
-    if (result.rows.length === 0) {
+    const existing = await pool.query('SELECT * FROM devices WHERE mac_address = $1', [mac]);
+    if (existing.rows.length === 0) {
       return res.status(404).json({ error: 'Device not found' });
     }
 
+    await pool.query(
+      `INSERT INTO device_audit_log (mac_address, field_name, old_value, new_value, updated_by)
+       VALUES ($1, 'deleted', 'exists', null, $2)`,
+      [mac, deletedBy]
+    );
+
+    await pool.query('DELETE FROM devices WHERE mac_address = $1', [mac]);
+
     res.json({ message: 'Device deleted successfully' });
   } catch (error) {
+    console.error('Delete device error:', error.message);
     res.status(500).json({ error: 'Failed to delete device' });
   }
 };

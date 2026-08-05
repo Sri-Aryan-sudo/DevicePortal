@@ -18,7 +18,12 @@ class DeviceDetail extends Component {
       editedFields: {},
       saving: false,
       saveSuccess: false,
-      saveError: null
+      saveError: null,
+
+      // Delete state
+      showDeleteConfirm: false,
+      deleting: false,
+      deleteError: null
     };
   }
 
@@ -102,6 +107,28 @@ class DeviceDetail extends Component {
   canEdit = () => {
     const { userRole } = this.props;
     return userRole === 'POC' || userRole === 'ADMIN';
+  }
+
+  // Check if user can delete (ADMIN only)
+  canDelete = () => {
+    const { userRole } = this.props;
+    return userRole === 'ADMIN';
+  }
+
+  // Handle delete
+  handleDeleteDevice = async () => {
+    const { device } = this.state;
+    const { authToken, onBack } = this.props;
+
+    try {
+      this.setState({ deleting: true, deleteError: null });
+      await deviceAPI.deleteDevice(device.mac_address, authToken);
+      this.setState({ deleting: false, showDeleteConfirm: false });
+      if (onBack) onBack();
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Failed to delete device';
+      this.setState({ deleting: false, deleteError: errorMessage });
+    }
   }
 
   // Enter edit mode
@@ -292,7 +319,7 @@ class DeviceDetail extends Component {
 
   // Render edit/save/cancel buttons
   renderEditButtons() {
-    const { isEditMode, saving, saveSuccess, saveError } = this.state;
+    const { isEditMode, saving, saveSuccess, saveError, showDeleteConfirm, deleting, deleteError } = this.state;
 
     if (!this.canEdit()) {
       return null; // VIEWER users don't see edit button
@@ -308,6 +335,11 @@ class DeviceDetail extends Component {
         {saveError && (
           <div className="save-error-message">
             ✗ {saveError}
+          </div>
+        )}
+        {deleteError && (
+          <div className="save-error-message">
+            ✗ {deleteError}
           </div>
         )}
         
@@ -329,9 +361,43 @@ class DeviceDetail extends Component {
             </button>
           </div>
         ) : (
-          <button className="btn-edit" onClick={this.handleEnterEditMode}>
-            ✏️ Edit Device
-          </button>
+          <div className="edit-buttons">
+            <button className="btn-edit" onClick={this.handleEnterEditMode}>
+              ✏️ Edit Device
+            </button>
+            {this.canDelete() && !showDeleteConfirm && (
+              <button
+                className="btn-delete"
+                onClick={() => this.setState({ showDeleteConfirm: true, deleteError: null })}
+              >
+                🗑 Delete Device
+              </button>
+            )}
+          </div>
+        )}
+
+        {showDeleteConfirm && (
+          <div className="delete-confirm">
+            <p className="delete-confirm-text">
+              Are you sure you want to permanently delete this device? This action cannot be undone.
+            </p>
+            <div className="edit-buttons">
+              <button
+                className="btn-delete"
+                onClick={this.handleDeleteDevice}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : '🗑 Yes, Delete'}
+              </button>
+              <button
+                className="btn-cancel"
+                onClick={() => this.setState({ showDeleteConfirm: false, deleteError: null })}
+                disabled={deleting}
+              >
+                ✕ Cancel
+              </button>
+            </div>
+          </div>
         )}
       </div>
     );
