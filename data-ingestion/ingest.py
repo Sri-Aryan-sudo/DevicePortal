@@ -71,19 +71,41 @@ def is_valid_mac(mac):
     return re.match(pattern, mac) is not None
 
 
+# Known vendors — matched case-insensitively, returned in canonical form
+_VENDOR_LIST = [
+    "Pioneer", "Element", "Apache", "Arris", "Sky", "Flex",
+    "Hisensepace", "Rogers", "Sercom", "Sharp", "Tech Xi6",
+    "Westinghouse", "Foxtel", "Negroni", "Xione"
+]
+
+# Model type substrings that map to Sky (checked before the main vendor list)
+# Longer aliases are listed first to prevent partial matches
+_SKY_ALIASES = [
+    "llama uk gen1", "llama panel g1", "llama gen2", "llama gen1",
+    "llama g2", "dhruvu", "cello"
+]
+
+
 def extract_vendor(model_type):
 
     if model_type is None:
         return None
 
     text = str(model_type).strip()
+    text_lower = text.lower()
 
-    if "_" in text:
-        return text.split("_")[0].upper()
-    if "-" in text:
-        return text.split("-")[0].upper()
+    # Check Sky aliases first (model types that don't contain "sky" but belong to Sky)
+    for alias in _SKY_ALIASES:
+        if alias in text_lower:
+            return "Sky"
 
-    return text.upper()
+    # Check known vendors (case-insensitive substring match)
+    for vendor in _VENDOR_LIST:
+        if vendor.lower() in text_lower:
+            return vendor
+
+    # Fallback: vendor is the model_type itself
+    return text
 
 
 # ==============================
