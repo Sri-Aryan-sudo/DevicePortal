@@ -74,7 +74,7 @@ def is_valid_mac(mac):
 # Known vendors — matched case-insensitively, returned in canonical form
 _VENDOR_LIST = [
     "Pioneer", "Element", "Apache", "Arris", "Sky", "Flex",
-    "Hisensepace", "Rogers", "Sercom", "Sharp", "Tech Xi6",
+    "Hisense", "Rogers", "Sercom", "Sharp", "TXI6", "TECHNICOLOR", "TECH",
     "Westinghouse", "Foxtel", "Negroni", "Xione"
 ]
 
