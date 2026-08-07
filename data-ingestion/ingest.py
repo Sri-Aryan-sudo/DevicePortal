@@ -85,6 +85,13 @@ _SKY_ALIASES = [
     "llama g2", "dhruvu", "cello"
 ]
 
+# Substring aliases that must resolve to a specific vendor before _VENDOR_LIST is checked
+_VENDOR_ALIASES = {
+    "westing_house": "Westinghouse",
+    "westing house": "Westinghouse",
+    "technicolor-xi6": "TECH",
+}
+
 
 def extract_vendor(model_type):
 
@@ -98,6 +105,11 @@ def extract_vendor(model_type):
     for alias in _SKY_ALIASES:
         if alias in text_lower:
             return "Sky"
+
+    # Check explicit aliases before the general vendor list
+    for alias, vendor in _VENDOR_ALIASES.items():
+        if alias in text_lower:
+            return vendor
 
     # Check known vendors (case-insensitive substring match)
     for vendor in _VENDOR_LIST:
