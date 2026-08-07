@@ -75,7 +75,7 @@ def is_valid_mac(mac):
 _VENDOR_LIST = [
     "Pioneer", "Element", "Apache", "Arris", "Sky", "Flex",
     "Hisense", "Rogers", "Sercom", "Sharp", "TXI6", "TECHNICOLOR", "TECH",
-    "Westinghouse", "Foxtel", "Negroni", "Xione"
+    "Westinghouse", "Foxtel", "Negroni", "Xione", "Pace"
 ]
 
 # Model type substrings that map to Sky (checked before the main vendor list)
