@@ -90,6 +90,7 @@ _VENDOR_ALIASES = {
     "westing_house": "Westinghouse",
     "westing house": "Westinghouse",
     "technicolor-xi6": "TECH",
+    "txi6": "TECH",
 }
 
 
