@@ -82,7 +82,7 @@ _VENDOR_LIST = [
 # Longer aliases are listed first to prevent partial matches
 _SKY_ALIASES = [
     "llama uk gen1", "llama panel g1", "llama gen2", "llama gen1",
-    "llama g2", "dhruvu", "cello"
+    "llama g2", "dhruvu", "cello", "llama"
 ]
 
 # Substring aliases that must resolve to a specific vendor before _VENDOR_LIST is checked
