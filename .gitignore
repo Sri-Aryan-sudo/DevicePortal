@@ -20,6 +20,9 @@ backend/.env
 data-ingestion/.env
 frontend/.env
 
+# Database backups (contain user data and password hashes)
+backups/
+
 # Build output
 frontend/build/
 

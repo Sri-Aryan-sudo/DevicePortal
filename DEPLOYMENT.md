@@ -202,7 +202,47 @@ And update the CSVIngestion component's upload URL to use the proxied
 
 ---
 
-## 8. Environment Variable Reference
+## 8. Backups
+
+`npm run backup` (from `backend`) creates, under `/opt/DevicePortal/backups`
+(override with `BACKUP_DIR`):
+
+| Path | Contents | Use |
+|------|----------|-----|
+| `db/device-inventory_<timestamp>.dump` | Full PostgreSQL backup: devices, audit log, users, schema | Disaster recovery |
+| `devices/devices_<timestamp>.xlsx` | Readable devices table with headers and filters | Browsing in Excel |
+| `devices/devices_latest.xlsx` | Copy of the newest workbook | Stable name for sharing later |
+
+Requires the PostgreSQL client tools (`pg_dump`, `pg_restore`) on the server, at
+the same major version as, or newer than, the database server. Each dump is
+verified with `pg_restore --list` before it is kept. Files are only readable by the
+user running the job. Backups older than `BACKUP_RETENTION_DAYS` (default 30) are
+deleted, but the newest 7 of each kind are always kept. The job exits non-zero if
+either part fails.
+
+Run it nightly at 02:00 with cron, as the user that runs the portal:
+
+```bash
+mkdir -p /opt/DevicePortal/logs
+crontab -e
+# 0 2 * * * cd /opt/DevicePortal/backend && /usr/bin/node scripts/backup.js >> /opt/DevicePortal/logs/backup.log 2>&1
+```
+
+Use the full path from `which node`. Check `backup.log` after the first run.
+
+Restore a full backup into a new, empty database (test this regularly):
+
+```bash
+createdb -h localhost -U postgres device-inventory-restore
+pg_restore -h localhost -U postgres -d device-inventory-restore --no-owner /opt/DevicePortal/backups/db/<file>.dump
+```
+
+These backups are on the same server as the database. Copy them elsewhere
+(such as the planned SharePoint folder) to protect against server or disk loss.
+
+---
+
+## 9. Environment Variable Reference
 
 ### Backend (.env)
 
@@ -219,6 +259,8 @@ And update the CSVIngestion component's upload URL to use the proxied
 | JWT_EXPIRES_IN | No       | 8h                 | Token lifetime                           |
 | CORS_ORIGIN    | No       | http://localhost:3000 | Comma-separated allowed origins       |
 | BCRYPT_ROUNDS  | No       | 12                 | Bcrypt cost factor                       |
+| BACKUP_DIR     | No       | `<project root>/backups` | Where backups are written          |
+| BACKUP_RETENTION_DAYS | No | 30                | Days to keep backups (newest 7 always kept) |
 
 ### Ingestion Service (.env)
 
@@ -242,7 +284,7 @@ And update the CSVIngestion component's upload URL to use the proxied
 
 ---
 
-## 9. Ports Summary
+## 10. Ports Summary
 
 | Service             | Default Port | Configurable Via       |
 |---------------------|-------------|------------------------|
@@ -253,7 +295,7 @@ And update the CSVIngestion component's upload URL to use the proxied
 
 ---
 
-## 10. User Roles
+## 11. User Roles
 
 | Role   | Login Required | View | Edit Devices | Upload CSV | Manage Users |
 |--------|---------------|------|-------------|-----------|-------------|
