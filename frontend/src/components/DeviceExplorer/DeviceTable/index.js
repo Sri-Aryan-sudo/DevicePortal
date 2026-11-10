@@ -15,6 +15,7 @@ const DeviceTableRow = memo(({ device, index, onSelect }) => {
       <td>{device.vendor}</td>
       <td>{device.team_name}</td>
       <td>{device.location_site}</td>
+      <td>{device.working_status}</td>
       <td>
         <button
           className="action-btn"
@@ -50,13 +51,14 @@ const DeviceTable = memo(({
     <div className="devices-table-container glass-panel">
       <table className="devices-table">
         <colgroup>
+          <col style={{ width: '17%' }} />
+          <col style={{ width: '8%' }} />
           <col style={{ width: '18%' }} />
-          <col style={{ width: '10%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '14%' }} />
-          <col style={{ width: '14%' }} />
-          <col style={{ width: '14%' }} />
-          <col style={{ width: '10%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '8%' }} />
         </colgroup>
         <thead>
           <tr>
@@ -78,13 +80,16 @@ const DeviceTable = memo(({
             <th onClick={() => onSort('location_site')}>
               Location{renderSortIndicator('location_site')}
             </th>
+            <th onClick={() => onSort('working_status')}>
+              Working Status{renderSortIndicator('working_status')}
+            </th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {devices.length === 0 ? (
             <tr>
-              <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
+              <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>
                 No devices found
               </td>
             </tr>

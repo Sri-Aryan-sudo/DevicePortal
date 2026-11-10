@@ -50,7 +50,7 @@ class DeviceDetail extends Component {
       const auditLogs = auditRes.data || [];
 
       // Derive timeline from key field changes
-      const timelineFields = ['team_name', 'current_team', 'primary_owner', 'current_user', 'location_site', 'placement_type'];
+      const timelineFields = ['team_name', 'current_team', 'primary_owner', 'current_user', 'location_site', 'placement_type', 'working_status'];
       const timeline = auditLogs
         .filter(log => timelineFields.includes(log.field_name))
         .map(log => ({
@@ -142,7 +142,8 @@ class DeviceDetail extends Component {
         usage_purpose: device.usage_purpose || '',
         placement_type: device.placement_type || '',
         location_site: device.location_site || '',
-        device_repurpose: device.device_repurpose || ''
+        device_repurpose: device.device_repurpose || '',
+        working_status: device.working_status
       },
       saveSuccess: false,
       saveError: null
@@ -283,6 +284,7 @@ class DeviceDetail extends Component {
           {this.renderEditableField('Placement Type', 'placement_type', device.placement_type)}
           {this.renderEditableField('Usage Purpose', 'usage_purpose', device.usage_purpose)}
           {this.renderEditableField('Device Repurpose', 'device_repurpose', device.device_repurpose)}
+          {this.renderEditableField('Working Status', 'working_status', device.working_status, ['Good', 'Bad', 'Unknown'])}
           
           <div className="detail-row">
             <span className="detail-label">Rack</span>
@@ -297,13 +299,22 @@ class DeviceDetail extends Component {
   }
 
   // Render editable field based on edit mode
-  renderEditableField(label, fieldName, value) {
+  renderEditableField(label, fieldName, value, options) {
     const { isEditMode, editedFields } = this.state;
 
     return (
       <div className="detail-row">
         <span className="detail-label">{label}</span>
-        {isEditMode ? (
+        {isEditMode && options ? (
+          <select
+            className="detail-input"
+            aria-label={label}
+            value={editedFields[fieldName]}
+            onChange={(e) => this.handleFieldChange(fieldName, e.target.value)}
+          >
+            {options.map(option => <option key={option} value={option}>{option}</option>)}
+          </select>
+        ) : isEditMode ? (
           <input
             type="text"
             className="detail-input"

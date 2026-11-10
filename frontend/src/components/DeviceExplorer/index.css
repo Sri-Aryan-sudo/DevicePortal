@@ -231,6 +231,7 @@
 
 .devices-table {
   width: 100%;
+  min-width: 1100px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -407,7 +408,4 @@
     overflow-x: auto;
   }
 
-  .devices-table {
-    min-width: 900px;
-  }
 }

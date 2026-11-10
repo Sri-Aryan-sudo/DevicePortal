@@ -21,13 +21,15 @@ class DeviceExplorer extends Component {
         deviceType: [],
         vendor: [],
         team: [],
-        location: []
+        location: [],
+        workingStatus: []
       },
       filterOptions: {
         deviceTypes: [],
         vendors: [],
         teams: [],
-        locations: []
+        locations: [],
+        workingStatuses: []
       },
       sortBy: 'mac_address',
       sortOrder: 'asc',
@@ -71,7 +73,8 @@ class DeviceExplorer extends Component {
           deviceTypes: response.data.deviceTypes,
           vendors: response.data.vendors,
           teams: response.data.teams,
-          locations: response.data.locations || []
+          locations: response.data.locations || [],
+          workingStatuses: response.data.workingStatuses
         }
       });
     } catch (error) {
@@ -99,29 +102,7 @@ class DeviceExplorer extends Component {
       const response = await deviceAPI.getDevices(params);
       
       // Apply filters and search client-side
-      let filtered = response.data.devices;
-      
-      // Apply multi-select filters
-      if (selectedFilters.deviceType.length > 0) {
-        filtered = filtered.filter(device => 
-          selectedFilters.deviceType.includes(device.device_type)
-        );
-      }
-      if (selectedFilters.vendor.length > 0) {
-        filtered = filtered.filter(device => 
-          selectedFilters.vendor.includes(device.vendor)
-        );
-      }
-      if (selectedFilters.team.length > 0) {
-        filtered = filtered.filter(device => 
-          selectedFilters.team.includes(device.team_name)
-        );
-      }
-      if (selectedFilters.location.length > 0) {
-        filtered = filtered.filter(device => 
-          selectedFilters.location.includes(device.location_site)
-        );
-      }
+      let filtered = this.applySelectedFilters(response.data.devices, selectedFilters);
       
       // Apply search query
       filtered = this.filterDevices(filtered, this.state.searchQuery);
@@ -136,6 +117,23 @@ class DeviceExplorer extends Component {
     } catch (error) {
       this.setState({ error: 'Failed to load devices', loading: false });
     }
+  }
+
+  applySelectedFilters(devices, selectedFilters) {
+    const filterFields = {
+      deviceType: 'device_type',
+      vendor: 'vendor',
+      team: 'team_name',
+      location: 'location_site',
+      workingStatus: 'working_status'
+    };
+
+    return devices.filter(device =>
+      Object.entries(filterFields).every(([category, field]) =>
+        selectedFilters[category].length === 0 ||
+        selectedFilters[category].includes(device[field])
+      )
+    );
   }
 
   // Client-side filtering function with flexible search
@@ -172,19 +170,7 @@ class DeviceExplorer extends Component {
     const { devices, selectedFilters } = this.state;
     
     // Apply multi-select filters first
-    let filtered = devices;
-    if (selectedFilters.deviceType.length > 0) {
-      filtered = filtered.filter(device => selectedFilters.deviceType.includes(device.device_type));
-    }
-    if (selectedFilters.vendor.length > 0) {
-      filtered = filtered.filter(device => selectedFilters.vendor.includes(device.vendor));
-    }
-    if (selectedFilters.team.length > 0) {
-      filtered = filtered.filter(device => selectedFilters.team.includes(device.team_name));
-    }
-    if (selectedFilters.location.length > 0) {
-      filtered = filtered.filter(device => selectedFilters.location.includes(device.location_site));
-    }
+    let filtered = this.applySelectedFilters(devices, selectedFilters);
     
     // Then apply search
     filtered = this.filterDevices(filtered, newQuery);
@@ -201,19 +187,7 @@ class DeviceExplorer extends Component {
     const { devices, selectedFilters } = this.state;
     
     // Apply multi-select filters
-    let filtered = devices;
-    if (selectedFilters.deviceType.length > 0) {
-      filtered = filtered.filter(device => selectedFilters.deviceType.includes(device.device_type));
-    }
-    if (selectedFilters.vendor.length > 0) {
-      filtered = filtered.filter(device => selectedFilters.vendor.includes(device.vendor));
-    }
-    if (selectedFilters.team.length > 0) {
-      filtered = filtered.filter(device => selectedFilters.team.includes(device.team_name));
-    }
-    if (selectedFilters.location.length > 0) {
-      filtered = filtered.filter(device => selectedFilters.location.includes(device.location_site));
-    }
+    const filtered = this.applySelectedFilters(devices, selectedFilters);
     
     this.setState({ 
       searchQuery: '', 
@@ -254,7 +228,7 @@ class DeviceExplorer extends Component {
 
   handleClearFilters() {
     this.setState({
-      selectedFilters: { deviceType: [], vendor: [], team: [], location: [] },
+      selectedFilters: { deviceType: [], vendor: [], team: [], location: [], workingStatus: [] },
       currentPage: 1
     }, () => {
       this.fetchDevices();
@@ -359,4 +333,3 @@ class DeviceExplorer extends Component {
 }
 
 export default DeviceExplorer;
-

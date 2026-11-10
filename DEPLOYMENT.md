@@ -59,6 +59,15 @@ npm run seed
 # >>> Change the admin password immediately after first login <<<
 ```
 
+For existing installations, run `npm run migrate` from `backend` before deploying
+the updated application. This also applies `add_working_status.sql`; re-running
+it is safe. The `working_status` column accepts only `Good`, `Bad`, or `Unknown`
+and defaults existing and new devices to `Unknown` (not yet assessed). It is
+independent of utilization. POC and ADMIN users can change it in Device Details;
+VIEWER users can view and filter it in Device Explorer. Changes are audit-logged.
+Existing CSV ingestion leaves this field unchanged on updates and uses the
+database default for new devices; working status is managed in the portal.
+
 ---
 
 ## 4. Python Ingestion Service Setup

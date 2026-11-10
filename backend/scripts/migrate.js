@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Run the main schema migration against the database.
+ * Run the main schema and incremental migrations against the database.
  * Usage:  node scripts/migrate.js
  */
 
@@ -19,12 +19,12 @@ const pool = new Pool({
 });
 
 async function migrate() {
-  const schemaPath = path.join(__dirname, '../migrations/schema.sql');
-  const sql = fs.readFileSync(schemaPath, 'utf8');
-
-  console.log('Applying schema.sql …');
-  await pool.query(sql);
-  console.log('Schema applied successfully.');
+  for (const migration of ['schema.sql', 'add_working_status.sql']) {
+    const sql = fs.readFileSync(path.join(__dirname, '../migrations', migration), 'utf8');
+    console.log(`Applying ${migration} ...`);
+    await pool.query(sql);
+  }
+  console.log('Migrations applied successfully.');
 
   await pool.end();
 }

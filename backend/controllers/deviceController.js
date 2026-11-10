@@ -1,5 +1,8 @@
 const pool = require('../config/db');
 
+const WORKING_STATUSES = ['Good', 'Bad', 'Unknown'];
+const WORKING_STATUS_ERROR = 'working_status must be Good, Bad, or Unknown';
+
 // Helper: log field-level changes to audit table
 const logAuditChanges = async (macAddress, oldRecord, newFields, updatedBy) => {
   const entries = [];
@@ -33,11 +36,16 @@ const getDevices = async (req, res) => {
       vendor = '',
       team = '',
       modelType = '',
+      workingStatus = '',
       sortBy = 'mac_address',
       sortOrder = 'asc',
       page = 1,
       limit = 15
     } = req.query;
+
+    if (workingStatus && !WORKING_STATUSES.includes(workingStatus)) {
+      return res.status(400).json({ error: WORKING_STATUS_ERROR });
+    }
 
     let query = 'SELECT * FROM devices WHERE 1=1';
     const params = [];
@@ -73,11 +81,17 @@ const getDevices = async (req, res) => {
       paramCount++;
     }
 
+    if (workingStatus) {
+      params.push(workingStatus);
+      query += ` AND working_status = $${paramCount}`;
+      paramCount++;
+    }
+
     const countQuery = query.replace('SELECT *', 'SELECT COUNT(*)');
     const countResult = await pool.query(countQuery, params);
     const totalRecords = parseInt(countResult.rows[0].count);
 
-    const validSortColumns = ['mac_address', 'model_name', 'device_type', 'vendor', 'team_name', 'location_site'];
+    const validSortColumns = ['mac_address', 'model_name', 'device_type', 'vendor', 'team_name', 'location_site', 'working_status'];
     const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'mac_address';
     const sortDirection = sortOrder.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
@@ -146,22 +160,27 @@ const createDevice = async (req, res) => {
       utilization_week_8,
       automation_filter,
       infra_tickets,
-      device_repurpose
+      device_repurpose,
+      working_status = 'Unknown'
     } = req.body;
+
+    if (!WORKING_STATUSES.includes(working_status)) {
+      return res.status(400).json({ error: WORKING_STATUS_ERROR });
+    }
 
     const result = await pool.query(
       `INSERT INTO devices (
         mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
         location_scope, location_site, placement_type, team_name, current_team, usage_purpose,
         primary_owner, "current_user", utilization_week_7, utilization_week_8, automation_filter,
-        infra_tickets, device_repurpose
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        infra_tickets, device_repurpose, working_status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *`,
       [
         mac_address, model_name, model_alias, model_type, device_type, vendor, rack,
         location_scope, location_site, placement_type, team_name, current_team, usage_purpose,
         primary_owner, current_user, utilization_week_7, utilization_week_8, automation_filter,
-        infra_tickets, device_repurpose
+        infra_tickets, device_repurpose, working_status
       ]
     );
 
@@ -179,11 +198,16 @@ const updateDevice = async (req, res) => {
     const { mac } = req.params;
     const fields = req.body;
 
+    if (Object.prototype.hasOwnProperty.call(fields, 'working_status') &&
+        !WORKING_STATUSES.includes(fields.working_status)) {
+      return res.status(400).json({ error: WORKING_STATUS_ERROR });
+    }
+
     const allowedFields = [
       'model_name', 'model_alias', 'model_type', 'device_type', 'vendor', 'rack',
       'location_scope', 'location_site', 'placement_type', 'current_team',
       'usage_purpose', 'current_user', 'utilization_week_7', 'utilization_week_8',
-      'automation_filter', 'infra_tickets', 'device_repurpose'
+      'automation_filter', 'infra_tickets', 'device_repurpose', 'working_status'
     ];
 
     // Fetch current record for audit comparison
@@ -232,7 +256,12 @@ const updateDevice = async (req, res) => {
 const updateDeviceByPOC = async (req, res) => {
   try {
     const { mac } = req.params;
-    const { current_user, current_team, usage_purpose, placement_type, location_site, device_repurpose } = req.body;
+    const { current_user, current_team, usage_purpose, placement_type, location_site, device_repurpose, working_status } = req.body;
+
+    if (Object.prototype.hasOwnProperty.call(req.body, 'working_status') &&
+        !WORKING_STATUSES.includes(working_status)) {
+      return res.status(400).json({ error: WORKING_STATUS_ERROR });
+    }
 
     // Fetch current record for audit comparison
     const currentResult = await pool.query('SELECT * FROM devices WHERE mac_address = $1', [mac]);
@@ -281,6 +310,12 @@ const updateDeviceByPOC = async (req, res) => {
       updates.push(`device_repurpose = $${paramCount}`);
       values.push(device_repurpose);
       fieldsToAudit.device_repurpose = device_repurpose;
+      paramCount++;
+    }
+    if (working_status !== undefined) {
+      updates.push(`working_status = $${paramCount}`);
+      values.push(working_status);
+      fieldsToAudit.working_status = working_status;
       paramCount++;
     }
 
@@ -382,7 +417,8 @@ const getFilterOptions = async (req, res) => {
       vendors: vendors.rows.map(r => r.vendor),
       teams: teams.rows.map(r => r.team_name),
       deviceTypes: deviceTypes.rows.map(r => r.device_type),
-      locations: locations.rows.map(r => r.location_site)
+      locations: locations.rows.map(r => r.location_site),
+      workingStatuses: WORKING_STATUSES
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch filter options' });

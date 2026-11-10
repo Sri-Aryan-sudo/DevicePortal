@@ -53,6 +53,9 @@ CREATE TABLE IF NOT EXISTS devices (
   automation_filter  VARCHAR(255),
   infra_tickets      INTEGER,
   device_repurpose   VARCHAR(255),
+  working_status     VARCHAR(7) NOT NULL DEFAULT 'Unknown'
+                      CONSTRAINT devices_working_status_check
+                      CHECK (working_status IN ('Good', 'Bad', 'Unknown')),
   created_at         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

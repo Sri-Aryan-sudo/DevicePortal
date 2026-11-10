@@ -12,14 +12,16 @@ const FilterPanel = memo(({
     deviceType: filterOptions.deviceTypes,
     vendor: filterOptions.vendors,
     team: filterOptions.teams,
-    location: filterOptions.locations || []
+    location: filterOptions.locations || [],
+    workingStatus: filterOptions.workingStatuses
   };
 
   const filterLabels = {
     deviceType: 'Device Type',
     vendor: 'Vendor',
     team: 'Primary Team',
-    location: 'Location'
+    location: 'Location',
+    workingStatus: 'Working Status'
   };
 
   return (
