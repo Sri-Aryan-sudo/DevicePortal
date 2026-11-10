@@ -374,11 +374,15 @@ const getFilterOptions = async (req, res) => {
     const deviceTypes = await pool.query(
       'SELECT DISTINCT device_type FROM devices ORDER BY device_type'
     );
+    const locations = await pool.query(
+      'SELECT DISTINCT location_site FROM devices WHERE location_site IS NOT NULL ORDER BY location_site'
+    );
 
     res.json({
       vendors: vendors.rows.map(r => r.vendor),
       teams: teams.rows.map(r => r.team_name),
-      deviceTypes: deviceTypes.rows.map(r => r.device_type)
+      deviceTypes: deviceTypes.rows.map(r => r.device_type),
+      locations: locations.rows.map(r => r.location_site)
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch filter options' });

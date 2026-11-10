@@ -11,13 +11,15 @@ const FilterPanel = memo(({
   const filters = {
     deviceType: filterOptions.deviceTypes,
     vendor: filterOptions.vendors,
-    team: filterOptions.teams
+    team: filterOptions.teams,
+    location: filterOptions.locations || []
   };
 
   const filterLabels = {
     deviceType: 'Device Type',
     vendor: 'Vendor',
-    team: 'Primary Team'
+    team: 'Primary Team',
+    location: 'Location'
   };
 
   return (

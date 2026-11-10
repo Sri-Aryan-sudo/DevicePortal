@@ -20,12 +20,14 @@ class DeviceExplorer extends Component {
       selectedFilters: {
         deviceType: [],
         vendor: [],
-        team: []
+        team: [],
+        location: []
       },
       filterOptions: {
         deviceTypes: [],
         vendors: [],
-        teams: []
+        teams: [],
+        locations: []
       },
       sortBy: 'mac_address',
       sortOrder: 'asc',
@@ -68,7 +70,8 @@ class DeviceExplorer extends Component {
         filterOptions: {
           deviceTypes: response.data.deviceTypes,
           vendors: response.data.vendors,
-          teams: response.data.teams
+          teams: response.data.teams,
+          locations: response.data.locations || []
         }
       });
     } catch (error) {
@@ -114,6 +117,11 @@ class DeviceExplorer extends Component {
           selectedFilters.team.includes(device.team_name)
         );
       }
+      if (selectedFilters.location.length > 0) {
+        filtered = filtered.filter(device => 
+          selectedFilters.location.includes(device.location_site)
+        );
+      }
       
       // Apply search query
       filtered = this.filterDevices(filtered, this.state.searchQuery);
@@ -152,6 +160,7 @@ class DeviceExplorer extends Component {
         (device.vendor && device.vendor.toLowerCase().includes(query)) ||
         (device.team_name && device.team_name.toLowerCase().includes(query)) ||
         (device.current_team && device.current_team.toLowerCase().includes(query)) ||
+        (device.location_site && device.location_site.toLowerCase().includes(query)) ||
         // Flexible model_type search: allows partial matches without underscores
         (normalizedModelType && normalizedModelType.includes(query))
       );
@@ -172,6 +181,9 @@ class DeviceExplorer extends Component {
     }
     if (selectedFilters.team.length > 0) {
       filtered = filtered.filter(device => selectedFilters.team.includes(device.team_name));
+    }
+    if (selectedFilters.location.length > 0) {
+      filtered = filtered.filter(device => selectedFilters.location.includes(device.location_site));
     }
     
     // Then apply search
@@ -198,6 +210,9 @@ class DeviceExplorer extends Component {
     }
     if (selectedFilters.team.length > 0) {
       filtered = filtered.filter(device => selectedFilters.team.includes(device.team_name));
+    }
+    if (selectedFilters.location.length > 0) {
+      filtered = filtered.filter(device => selectedFilters.location.includes(device.location_site));
     }
     
     this.setState({ 
@@ -239,7 +254,7 @@ class DeviceExplorer extends Component {
 
   handleClearFilters() {
     this.setState({
-      selectedFilters: { deviceType: [], vendor: [], team: [] },
+      selectedFilters: { deviceType: [], vendor: [], team: [], location: [] },
       currentPage: 1
     }, () => {
       this.fetchDevices();
